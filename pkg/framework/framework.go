@@ -36,13 +36,6 @@ import (
 	"github.com/onsi/gomega"
 )
 
-const (
-	qdrOperatorName = "qdr-operator"
-	crdName         = "interconnects.interconnectedcloud.github.io"
-	groupName       = "interconnectedcloud.github.io"
-	apiVersion      = "v1alpha1"
-)
-
 var (
 	RetryInterval        = time.Second * 5
 	Timeout              = time.Second * 600
@@ -73,6 +66,12 @@ type ContextData struct {
 
 type Framework struct {
 	BaseName string
+	OperatorName string
+	CrdName string
+	GroupName string
+	ApiVersion string
+	Rule rbacv1.PolicyRule
+	CRD apiextv1b1.CustomResourceDefinitionSpec
 
 	// Map that ties clients and namespaces for each available context
 	ContextMap map[string]*ContextData
@@ -81,6 +80,26 @@ type Framework struct {
 	cleanupHandleEach     CleanupActionHandle
 	cleanupHandleSuite    CleanupActionHandle
 	afterEachDone         bool
+}
+
+func NewFramework(baseName string, 
+                  operatorName string, 
+                  crdName string, 
+                  groupName string, 
+                  apiVersion string, 
+                  rbacv1.PolicyRule rule, 
+                  apiextv1b1.CustomResourceDefinitionSpec spec,
+                  contexts ...string) *Framework {
+    f := &Framework{
+        BaseName: baseName,
+        ContextMap: make(map[string] *ContextData),
+        OperatorName: operatorName,
+        CrdName: crdName,
+        GroupName: groupName,
+        ApiVersion: apiVersion,
+        CRD: spec,
+    }
+    f.BeforeEach(contexts...);
 }
 
 // NewFramework creates a test framework
@@ -255,118 +274,118 @@ func (f *Framework) AfterSuite() {
 
 func (f *Framework) TeardownEach() error {
 
-	// Skip the qdr-operator teardown if the operator image was not specified
+	// Skip the operator teardown if the operator image was not specified
 	if len(TestContext.OperatorImage) == 0 {
 		return nil
 	}
 
 	// Iterate through all contexts and deleting namespace related resources
 	for _, contextData := range f.ContextMap {
-		err := contextData.Clients.KubeClient.CoreV1().ServiceAccounts(contextData.Namespace).Delete(qdrOperatorName, metav1.NewDeleteOptions(1))
+		err := contextData.Clients.KubeClient.CoreV1().ServiceAccounts(contextData.Namespace).Delete(OperatorName, metav1.NewDeleteOptions(1))
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete qdr-operator service account: %v", err)
+			return fmt.Errorf("failed to delete %s service account: %v", OperatorName, err)
 		}
-		err = contextData.Clients.KubeClient.RbacV1().Roles(contextData.Namespace).Delete(qdrOperatorName, metav1.NewDeleteOptions(1))
+		err = contextData.Clients.KubeClient.RbacV1().Roles(contextData.Namespace).Delete(OperatorName, metav1.NewDeleteOptions(1))
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete qdr-operator role: %v", err)
+			return fmt.Errorf("failed to delete %s role: %v", OperatorName, err)
 		}
-		err = contextData.Clients.KubeClient.RbacV1().RoleBindings(contextData.Namespace).Delete(qdrOperatorName, metav1.NewDeleteOptions(1))
+		err = contextData.Clients.KubeClient.RbacV1().RoleBindings(contextData.Namespace).Delete(OperatorName, metav1.NewDeleteOptions(1))
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete qdr-operator role binding: %v", err)
+			return fmt.Errorf("failed to delete %s role binding: %v", OperatorName, err)
 		}
-		err = contextData.Clients.KubeClient.AppsV1().Deployments(contextData.Namespace).Delete(qdrOperatorName, metav1.NewDeleteOptions(1))
+		err = contextData.Clients.KubeClient.AppsV1().Deployments(contextData.Namespace).Delete(OperatorName, metav1.NewDeleteOptions(1))
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete qdr-operator deployment: %v", err)
+			return fmt.Errorf("failed to delete %s deployment: %v", OperatorName, err)
 		}
 	}
 
-	log.Logf("e2e teardown namespace successful")
+	log.Logf("%s teardown namespace successful", OperatorName)
 	return nil
 }
 
 func (f *Framework) TeardownSuite() error {
 
-	// Skip the qdr-operator teardown if the operator image was not specified
+	// Skip the operator teardown if the operator image was not specified
 	if len(TestContext.OperatorImage) == 0 {
 		return nil
 	}
 
 	// Iterate through all contexts
 	for _, contextData := range f.ContextMap {
-		err := contextData.Clients.KubeClient.RbacV1().ClusterRoles().Delete(qdrOperatorName, metav1.NewDeleteOptions(1))
+		err := contextData.Clients.KubeClient.RbacV1().ClusterRoles().Delete(OperatorName, metav1.NewDeleteOptions(1))
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete qdr-operator cluster role: %v", err)
+			return fmt.Errorf("failed to delete %s cluster role: %v", OperatorName, err)
 		}
-		err = contextData.Clients.KubeClient.RbacV1().ClusterRoleBindings().Delete(qdrOperatorName, metav1.NewDeleteOptions(1))
+		err = contextData.Clients.KubeClient.RbacV1().ClusterRoleBindings().Delete(OperatorName, metav1.NewDeleteOptions(1))
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete qdr-operator cluster role binding: %v", err)
+			return fmt.Errorf("failed to delete %s cluster role binding: %v", OperatorName, err)
 		}
-		err = contextData.Clients.ExtClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crdName, metav1.NewDeleteOptions(1))
+		err = contextData.Clients.ExtClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(CrdName, metav1.NewDeleteOptions(1))
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete qdr-operator crd: %v", err)
+			return fmt.Errorf("failed to delete %s crd: %v", OperatorName, err)
 		}
 	}
 
-	log.Logf("e2e teardown suite successful")
+	log.Logf("%s teardown suite successful", OperatorName)
 	return nil
 }
 
 func (f *Framework) Setup() error {
 
 	for _, ctxData := range f.ContextMap {
-		err := ctxData.setupQdrServiceAccount()
+		err := ctxData.setupServiceAccount()
 		if err != nil {
-			return fmt.Errorf("failed to setup qdr operator [setupQdrServiceAccount]: %v", err)
+			return fmt.Errorf("failed to setup %s [setupServiceAccount]: %v", OperatorName, err)
 		}
-		err = ctxData.setupQdrRole()
+		err = ctxData.setupRole()
 		if err != nil {
-			return fmt.Errorf("failed to setup qdr operator [setupQdrRole]: %v", err)
+			return fmt.Errorf("failed to setup %s [setupRole]: %v", OperatorName, err)
 		}
-		err = ctxData.setupQdrClusterRole()
+		err = ctxData.setupClusterRole()
 		if err != nil && !strings.Contains(err.Error(), "already exists") {
-			return fmt.Errorf("failed to setup qdr operator [setupQdrClusterRole]: %T - %v", err, err)
+			return fmt.Errorf("failed to setup %s [setupClusterRole]: %T - %v", OperatorName, err, err)
 		}
-		err = ctxData.setupQdrRoleBinding()
+		err = ctxData.setupRoleBinding()
 		if err != nil {
-			return fmt.Errorf("failed to setup qdr operator [setupQdrRoleBinding]: %v", err)
+			return fmt.Errorf("failed to setup %s [setupRoleBinding]: %v", OperatorName, err)
 		}
-		err = ctxData.setupQdrClusterRoleBinding()
+		err = ctxData.setupClusterRoleBinding()
 		if err != nil && !strings.Contains(err.Error(), "already exists") {
-			return fmt.Errorf("failed to setup qdr operator [setupQdrClusterRoleBinding]: %v", err)
+			return fmt.Errorf("failed to setup %s [setupClusterRoleBinding]: %v", OperatorName, err)
 		}
-		err = ctxData.setupQdrCrd()
+		err = ctxData.setupCrd()
 		if err != nil && !strings.Contains(err.Error(), "already exists") {
-			return fmt.Errorf("failed to setup qdr operator [setupQdrCrd]: %v", err)
+			return fmt.Errorf("failed to setup %s [setupCrd]: %v", OperatorName, err)
 		}
-		err = ctxData.setupQdrDeployment()
+		err = ctxData.setupDeployment()
 		if err != nil {
-			return fmt.Errorf("failed to setup qdr operator [setupQdrDeployment]: %v", err)
+			return fmt.Errorf("failed to setup %s [setupDeployment]: %v", OperatorName, err)
 		}
-		err = WaitForDeployment(ctxData.Clients.KubeClient, ctxData.Namespace, "qdr-operator", 1, RetryInterval, Timeout)
+		err = WaitForDeployment(ctxData.Clients.KubeClient, ctxData.Namespace, OperatorName, 1, RetryInterval, Timeout)
 		if err != nil {
-			return fmt.Errorf("Failed to wait for qdr operator: %v", err)
+			return fmt.Errorf("Failed to wait for %s: %v", OperatorName, err)
 		}
 	}
 	return nil
 }
 
-func (c *ContextData) setupQdrServiceAccount() error {
+func (c *ContextData) setupServiceAccount() error {
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: qdrOperatorName,
+			Name: OperatorName,
 		},
 	}
 	_, err := c.Clients.KubeClient.CoreV1().ServiceAccounts(c.Namespace).Create(sa)
 	if err != nil {
-		return fmt.Errorf("create qdr-operator service account failed: %v", err)
+		return fmt.Errorf("create %s service account failed: %v", OperatorName, err)
 	}
 	return nil
 }
 
-func (c *ContextData) setupQdrRole() error {
+func (c *ContextData) setupRole() error {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: qdrOperatorName,
+			Name: OperatorName,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -414,24 +433,20 @@ func (c *ContextData) setupQdrRole() error {
 				Resources: []string{"routes", "routes/custom-host", "routes/status"},
 				Verbs:     []string{"get", "list", "watch", "create", "delete"},
 			},
-			{
-				APIGroups: []string{"interconnectedcloud.github.io"},
-				Resources: []string{"*"},
-				Verbs:     []string{"*"},
-			},
+			Rule
 		},
 	}
 	_, err := c.Clients.KubeClient.RbacV1().Roles(c.Namespace).Create(role)
 	if err != nil {
-		return fmt.Errorf("create qdr-operator role failed: %v", err)
+		return fmt.Errorf("create %s role failed: %v", OperatorName, err)
 	}
 	return nil
 }
 
-func (c *ContextData) setupQdrClusterRole() error {
+func (c *ContextData) setupClusterRole() error {
 	crole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: qdrOperatorName,
+			Name: OperatorName,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -443,115 +458,105 @@ func (c *ContextData) setupQdrClusterRole() error {
 	}
 	_, err := c.Clients.KubeClient.RbacV1().ClusterRoles().Create(crole)
 	if err != nil {
-		return fmt.Errorf("create qdr-operator cluster role failed: %v", err)
+		return fmt.Errorf("create %s cluster role failed: %v", NameOperator, err)
 	}
 	return nil
 }
 
-func (c *ContextData) setupQdrRoleBinding() error {
+func (c *ContextData) setupRoleBinding() error {
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: qdrOperatorName,
+			Name: OperatorName,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
-			Name:     qdrOperatorName,
+			Name:     OperatorName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				APIGroup:  "",
 				Kind:      "ServiceAccount",
-				Name:      qdrOperatorName,
+				Name:      OperatorName,
 				Namespace: c.Namespace,
 			},
 		},
 	}
 	_, err := c.Clients.KubeClient.RbacV1().RoleBindings(c.Namespace).Create(rb)
 	if err != nil {
-		return fmt.Errorf("create qdr-operator role binding failed: %v", err)
+		return fmt.Errorf("create %s role binding failed: %v", OperatorName, err)
 	}
 	return nil
 }
 
-func (c *ContextData) setupQdrClusterRoleBinding() error {
+func (c *ContextData) setupClusterRoleBinding() error {
 	crb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: qdrOperatorName,
+			Name: OperatorName,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     qdrOperatorName,
+			Name:     OperatorName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				APIGroup:  "",
 				Kind:      "ServiceAccount",
-				Name:      qdrOperatorName,
+				Name:      OperatorName,
 				Namespace: c.Namespace,
 			},
 		},
 	}
 	_, err := c.Clients.KubeClient.RbacV1().ClusterRoleBindings().Create(crb)
 	if err != nil {
-		return fmt.Errorf("create qdr-operator cluster role binding failed: %v", err)
+		return fmt.Errorf("create %s cluster role binding failed: %v", OperatorName, err)
 	}
 	return nil
 }
 
-func (c *ContextData) setupQdrCrd() error {
+func (c *ContextData) setupCrd() error {
 	crd := &apiextv1b1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: crdName,
+			Name: CrdName,
 		},
-		Spec: apiextv1b1.CustomResourceDefinitionSpec{
-			Group: "interconnectedcloud.github.io",
-			Names: apiextv1b1.CustomResourceDefinitionNames{
-				Kind:     "Interconnect",
-				ListKind: "InterconnectList",
-				Plural:   "interconnects",
-				Singular: "interconnect",
-			},
-			Scope:   "Namespaced",
-			Version: "v1alpha1",
-		},
+		Spec: CRD
 	}
 	_, err := c.Clients.ExtClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
 	if err != nil {
-		return fmt.Errorf("create qdr-operator crd failed: %v", err)
+		return fmt.Errorf("create %s crd failed: %v", OperatorName, err)
 	}
 	return nil
 }
 
-func (c *ContextData) setupQdrDeployment() error {
+func (c *ContextData) setupDeployment() error {
 	dep := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: qdrOperatorName,
+			Name: OperatorName,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": qdrOperatorName,
+					"name": OperatorName,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": qdrOperatorName,
+						"name": OperatorName,
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: qdrOperatorName,
+					ServiceAccountName: OperatorName,
 					Containers: []corev1.Container{
 						{
-							Command:         []string{qdrOperatorName},
-							Name:            qdrOperatorName,
+							Command:         []string{OperatorName},
+							Name:            OperatorName,
 							Image:           TestContext.OperatorImage,
 							ImagePullPolicy: corev1.PullAlways,
 							Env: []corev1.EnvVar{
@@ -565,7 +570,7 @@ func (c *ContextData) setupQdrDeployment() error {
 								},
 								{
 									Name:  "OPERATOR_NAME",
-									Value: qdrOperatorName,
+									Value: OperatorName,
 								},
 							},
 							Ports: []corev1.ContainerPort{
@@ -582,7 +587,7 @@ func (c *ContextData) setupQdrDeployment() error {
 	}
 	_, err := c.Clients.KubeClient.AppsV1().Deployments(c.Namespace).Create(dep)
 	if err != nil {
-		return fmt.Errorf("create qdr-operator deployment failed: %v", err)
+		return fmt.Errorf("create %s deployment failed: %v", OperatorName, err)
 	}
 	return nil
 }
