@@ -33,7 +33,7 @@ import (
 
 const (
 	// namespaceNamePrefix is the prefix used when creating namespaces with a random name.
-	namespaceNamePrefix     = "qdr-operator-e2e-"
+	namespaceNamePrefix     = "operator-e2e-"
 	NamespaceCleanupTimeout = 2 * time.Minute
 )
 
