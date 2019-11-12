@@ -1,7 +1,7 @@
 package qeclients
 
 import (
-	"github.com/fgiorgetti/shipshape/pkg/api/client/amqp"
+	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
 )
 
 // MessageDict represents a message logged by cli-proton-python as a dictionary

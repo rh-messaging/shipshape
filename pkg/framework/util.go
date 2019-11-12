@@ -18,7 +18,7 @@ package framework
 
 import (
 	"fmt"
-	"github.com/fgiorgetti/shipshape/pkg/framework/log"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"sort"
 
 	"k8s.io/apimachinery/pkg/util/uuid"

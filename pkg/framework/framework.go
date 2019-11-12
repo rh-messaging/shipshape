@@ -16,7 +16,7 @@ package framework
 
 import (
 	"fmt"
-	"github.com/fgiorgetti/shipshape/pkg/framework/log"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"strings"
 	"time"
 

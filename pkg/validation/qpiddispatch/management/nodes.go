@@ -1,8 +1,8 @@
 package management
 
 import (
-	"github.com/fgiorgetti/shipshape/pkg/framework"
-	"github.com/fgiorgetti/shipshape/pkg/framework/qdrmanagement"
+	"github.com/rh-messaging/shipshape/pkg/framework"
+	"github.com/rh-messaging/shipshape/pkg/framework/qdrmanagement"
 	"github.com/onsi/gomega"
 )
 

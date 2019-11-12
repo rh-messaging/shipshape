@@ -1,7 +1,7 @@
 package amqp
 
 import (
-	"github.com/fgiorgetti/shipshape/pkg/framework"
+	"github.com/rh-messaging/shipshape/pkg/framework"
 	"time"
 )
 

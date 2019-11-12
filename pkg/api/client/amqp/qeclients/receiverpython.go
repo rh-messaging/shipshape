@@ -1,8 +1,8 @@
 package qeclients
 
 import (
-	"github.com/fgiorgetti/shipshape/pkg/api/client/amqp"
-	"github.com/fgiorgetti/shipshape/pkg/framework"
+	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
+	"github.com/rh-messaging/shipshape/pkg/framework"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"

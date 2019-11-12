@@ -1,8 +1,8 @@
 package qeclients
 
 import (
-	"github.com/fgiorgetti/shipshape/pkg/api/client/amqp"
-	"github.com/fgiorgetti/shipshape/pkg/framework"
+	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
+	"github.com/rh-messaging/shipshape/pkg/framework"
 )
 
 // AmqpQEClientImpl specifies the available Amqp QE Clients

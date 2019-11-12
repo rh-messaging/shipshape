@@ -16,7 +16,7 @@ package framework
 
 import (
 	"context"
-	"github.com/fgiorgetti/shipshape/pkg/framework/log"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/onsi/gomega"
 	"testing"
 	"time"

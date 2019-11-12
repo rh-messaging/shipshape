@@ -1,8 +1,8 @@
 package qdrmanagement
 
 import (
-	"github.com/fgiorgetti/shipshape/pkg/framework"
-	entities2 "github.com/fgiorgetti/shipshape/pkg/framework/qdrmanagement/entities"
+	"github.com/rh-messaging/shipshape/pkg/framework"
+	entities2 "github.com/rh-messaging/shipshape/pkg/framework/qdrmanagement/entities"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
