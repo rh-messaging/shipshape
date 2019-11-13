@@ -17,6 +17,8 @@ package framework
 import (
 	"fmt"
 	"github.com/interconnectedcloud/qdr-operator/pkg/apis/interconnectedcloud/v1alpha1"
+	qdrclient "github.com/interconnectedcloud/qdr-operator/pkg/client/clientset/versioned"
+	"github.com/rh-messaging/shipshape/pkg/framework/operators"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,6 +39,7 @@ func (c *ContextData) CreateInterconnectFromSpec(size int32, name string, spec v
 func (c *ContextData) CreateInterconnect(namespace string, size int32, fn ...InterconnectCustomizer) (*v1alpha1.Interconnect, error) {
 
 	const IC_PREFIX = "ic"
+	operator := c.OperatorMap[operators.OperatorTypeQdr]
 	obj := &v1alpha1.Interconnect{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Interconnect",
@@ -49,7 +52,7 @@ func (c *ContextData) CreateInterconnect(namespace string, size int32, fn ...Int
 		Spec: v1alpha1.InterconnectSpec{
 			DeploymentPlan: v1alpha1.DeploymentPlanType{
 				Size:      size,
-				Image:     TestContext.QdrImage,
+				Image:     operator.Image(),
 				Role:      "interior",
 				Placement: "Any",
 			},
@@ -61,17 +64,20 @@ func (c *ContextData) CreateInterconnect(namespace string, size int32, fn ...Int
 		f(obj)
 	}
 	// create the interconnect resource
-	return c.Clients.QdrClient.InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Create(obj)
+	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Create(obj)
 }
 
 func (c *ContextData) DeleteInterconnect(interconnect *v1alpha1.Interconnect) error {
-	return c.Clients.QdrClient.InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Delete(interconnect.Name, &metav1.DeleteOptions{})
+	operator := c.OperatorMap[operators.OperatorTypeQdr]
+	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Delete(interconnect.Name, &metav1.DeleteOptions{})
 }
 
 func (c *ContextData) GetInterconnect(name string) (*v1alpha1.Interconnect, error) {
-	return c.Clients.QdrClient.InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Get(name, metav1.GetOptions{})
+	operator := c.OperatorMap[operators.OperatorTypeQdr]
+	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Get(name, metav1.GetOptions{})
 }
 
 func (c *ContextData) UpdateInterconnect(interconnect *v1alpha1.Interconnect) (*v1alpha1.Interconnect, error) {
-	return c.Clients.QdrClient.InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Update(interconnect)
+	operator := c.OperatorMap[operators.OperatorTypeQdr]
+	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Update(interconnect)
 }
