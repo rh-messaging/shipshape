@@ -173,6 +173,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 
 		// Initializing supported operators on given context
 		// TODO Define new argument to control operators to deploy (or to ignore)
+		f.ContextMap[context].OperatorMap = map[operators.OperatorType]operators.OperatorSetup{}
 		for operatorType, builder := range operators.SupportedOperators {
 			operator, err := builder.NewForConfig(f.ContextMap[context].Namespace, restConfig)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
