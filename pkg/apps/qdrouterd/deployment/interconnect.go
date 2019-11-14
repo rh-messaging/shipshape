@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package framework
+package deployment
 
 import (
 	"fmt"
 	"github.com/interconnectedcloud/qdr-operator/pkg/apis/interconnectedcloud/v1alpha1"
 	qdrclient "github.com/interconnectedcloud/qdr-operator/pkg/client/clientset/versioned"
+	"github.com/rh-messaging/shipshape/pkg/framework"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,15 +29,15 @@ import (
 type InterconnectCustomizer func(interconnect *v1alpha1.Interconnect)
 
 // CreateInterconnectFromSpec creates an Interconnect resource using the provided InterconnectSpec
-func (c *ContextData) CreateInterconnectFromSpec(size int32, name string, spec v1alpha1.InterconnectSpec) (*v1alpha1.Interconnect, error) {
-	return c.CreateInterconnect(c.Namespace, size, func(ic *v1alpha1.Interconnect) {
+func CreateInterconnectFromSpec(c framework.ContextData, size int32, name string, spec v1alpha1.InterconnectSpec) (*v1alpha1.Interconnect, error) {
+	return CreateInterconnect(c, size, func(ic *v1alpha1.Interconnect) {
 		ic.Name = name
 		ic.Spec = spec
 	})
 }
 
 // CreateInterconnect creates an interconnect resource
-func (c *ContextData) CreateInterconnect(namespace string, size int32, fn ...InterconnectCustomizer) (*v1alpha1.Interconnect, error) {
+func CreateInterconnect(c framework.ContextData, size int32, fn ...InterconnectCustomizer) (*v1alpha1.Interconnect, error) {
 
 	const IC_PREFIX = "ic"
 	operator := c.OperatorMap[operators.OperatorTypeQdr]
@@ -47,7 +48,7 @@ func (c *ContextData) CreateInterconnect(namespace string, size int32, fn ...Int
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", IC_PREFIX, c.UniqueName),
-			Namespace: namespace,
+			Namespace: c.Namespace,
 		},
 		Spec: v1alpha1.InterconnectSpec{
 			DeploymentPlan: v1alpha1.DeploymentPlanType{
@@ -67,17 +68,17 @@ func (c *ContextData) CreateInterconnect(namespace string, size int32, fn ...Int
 	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Create(obj)
 }
 
-func (c *ContextData) DeleteInterconnect(interconnect *v1alpha1.Interconnect) error {
+func DeleteInterconnect(c framework.ContextData, interconnect *v1alpha1.Interconnect) error {
 	operator := c.OperatorMap[operators.OperatorTypeQdr]
 	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Delete(interconnect.Name, &metav1.DeleteOptions{})
 }
 
-func (c *ContextData) GetInterconnect(name string) (*v1alpha1.Interconnect, error) {
+func GetInterconnect(c framework.ContextData, name string) (*v1alpha1.Interconnect, error) {
 	operator := c.OperatorMap[operators.OperatorTypeQdr]
 	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Get(name, metav1.GetOptions{})
 }
 
-func (c *ContextData) UpdateInterconnect(interconnect *v1alpha1.Interconnect) (*v1alpha1.Interconnect, error) {
+func UpdateInterconnect(c framework.ContextData, interconnect *v1alpha1.Interconnect) (*v1alpha1.Interconnect, error) {
 	operator := c.OperatorMap[operators.OperatorTypeQdr]
 	return operator.Interface().(qdrclient.Interface).InterconnectedcloudV1alpha1().Interconnects(c.Namespace).Update(interconnect)
 }
