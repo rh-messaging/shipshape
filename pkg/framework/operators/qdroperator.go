@@ -20,7 +20,7 @@ type QdrOperatorBuilder struct{}
 
 func (q *QdrOperatorBuilder) NewForConfig(namespace string, restConfig *rest.Config) (OperatorSetup, error) {
 	qdr := &QdrOperator{
-		namespace: namespace,
+		namespace:  namespace,
 		restConfig: restConfig,
 	}
 
@@ -49,13 +49,13 @@ func (q *QdrOperatorBuilder) NewForConfig(namespace string, restConfig *rest.Con
 }
 
 type QdrOperator struct {
-	namespace string
+	namespace  string
 	restConfig *rest.Config
 	qdrClient  qdrclientset.Interface
 	kubeClient clientset.Interface
 	extClient  apiextension.Interface
 
-	keepCRD    bool
+	keepCRD bool
 }
 
 func (q *QdrOperator) Namespace() string {
