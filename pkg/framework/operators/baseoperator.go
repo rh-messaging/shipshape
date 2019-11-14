@@ -1,16 +1,30 @@
+package operators
+
+import (
+	"fmt"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+)
+
 type BaseOperator struct {
-	namespace string
+	namespace  string
 	restConfig *rest.Config
 	kubeClient clientset.Interface
 	extClient  apiextension.Interface
 	keepCRD    bool
-	imageName string
+	imageName  string
 }
 
+func (b *BaseOperator) TeardownSuite(name string) error {
 
-func (b* BaseOperator) TeardownSuite(name string) error {
-    
-    if b.keepCRD {
+	if b.keepCRD {
 		return nil
 	}
 
@@ -23,25 +37,25 @@ func (b* BaseOperator) TeardownSuite(name string) error {
 		return fmt.Errorf("failed to delete %s cluster role binding: %v", name, err)
 	}
 	//Custom Resource Definition teardown is up to children classes
-	
+
 	log.Logf("%s teardown suite successful", name)
 	return nil
 }
 
-func (b* BaseOperator) TeardownEach(name string) error {
-	err := b.kubeClient.CoreV1().ServiceAccounts(b.Namespace()).Delete(name, metav1.NewDeleteOptions(1))
+func (b *BaseOperator) TeardownEach(name string) error {
+	err := b.kubeClient.CoreV1().ServiceAccounts(b.namespace).Delete(name, metav1.NewDeleteOptions(1))
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s service account: %v", name, err)
 	}
-	err = b.kubeClient.RbacV1().Roles(b.Namespace()).Delete(name, metav1.NewDeleteOptions(1))
+	err = b.kubeClient.RbacV1().Roles(b.namespace).Delete(name, metav1.NewDeleteOptions(1))
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s role: %v", name, err)
 	}
-	err = b.kubeClient.RbacV1().RoleBindings(b.Namespace()).Delete(name, metav1.NewDeleteOptions(1))
+	err = b.kubeClient.RbacV1().RoleBindings(b.namespace).Delete(name, metav1.NewDeleteOptions(1))
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s role binding: %v", name, err)
 	}
-	err = b.kubeClient.AppsV1().Deployments(b.Namespace()).Delete(name, metav1.NewDeleteOptions(1))
+	err = b.kubeClient.AppsV1().Deployments(b.namespace).Delete(name, metav1.NewDeleteOptions(1))
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s deployment: %v", name, err)
 	}
@@ -50,9 +64,8 @@ func (b* BaseOperator) TeardownEach(name string) error {
 	return nil
 }
 
-
-func (b* BaseOperator) SetupRole(name string) error {
-    role := &rbacv1.Role{
+func (b *BaseOperator) SetupRole(name string) error {
+	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -99,11 +112,11 @@ func (b* BaseOperator) SetupRole(name string) error {
 			},
 		},
 	}
-	_, err := b.kubeClient.RbacV1().Roles(b.Namespace()).Create(role)
+	_, err := b.kubeClient.RbacV1().Roles(b.namespace).Create(role)
 	return err
 }
 
-func (b* BaseOperator) SetupClusterRole(name string) error {
+func (b *BaseOperator) SetupClusterRole(name string) error {
 	crole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -120,7 +133,7 @@ func (b* BaseOperator) SetupClusterRole(name string) error {
 	return err
 }
 
-func (b* BaseOperator) SetupRoleBinding(name string) error {
+func (b *BaseOperator) SetupRoleBinding(name string) error {
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -135,15 +148,15 @@ func (b* BaseOperator) SetupRoleBinding(name string) error {
 				APIGroup:  "",
 				Kind:      "ServiceAccount",
 				Name:      name,
-				Namespace: b.Namespace(),
+				Namespace: b.namespace,
 			},
 		},
 	}
-	_, err := b.kubeClient.RbacV1().RoleBindings(b.Namespace()).Create(rb)
+	_, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(rb)
 	return err
 }
 
-func (b* BaseOperator) SetupClusterRoleBinding(name string) error {
+func (b *BaseOperator) SetupClusterRoleBinding(name string) error {
 	crb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -158,17 +171,17 @@ func (b* BaseOperator) SetupClusterRoleBinding(name string) error {
 				APIGroup:  "",
 				Kind:      "ServiceAccount",
 				Name:      name,
-				Namespace: b.Namespace(),
+				Namespace: b.namespace,
 			},
 		},
 	}
-	_, err := q.kubeClient.RbacV1().ClusterRoleBindings().Create(crb)
+	_, err := b.kubeClient.RbacV1().ClusterRoleBindings().Create(crb)
 	return err
-}      
+}
 
-func (b* BaseOperator SetupDeployment(name string, 
-                                      image string) error {
-    dep := &appsv1.Deployment{
+func (b *BaseOperator) SetupDeployment(name string,
+	image string) error {
+	dep := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
@@ -223,6 +236,17 @@ func (b* BaseOperator SetupDeployment(name string,
 			},
 		},
 	}
-	_, err := q.kubeClient.AppsV1().Deployments(b.namespace).Create(dep)
-    return err
+	_, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(dep)
+	return err
+}
+
+
+func (b* BaseOperator) SetupServiceAccount(name string) error {
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	_, err := b.kubeClient.CoreV1().ServiceAccounts(b.namespace).Create(sa)
+	return err
 }

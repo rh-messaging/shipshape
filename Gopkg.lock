@@ -277,6 +277,22 @@
   version = "v3.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:61ce832e5ac83f1ad6d545124b3a34dd7648cdca35abc4dd35c7af28baa1faac"
+  name = "github.com/rh-messaging/shipshape"
+  packages = [
+    "pkg/api/client/amqp",
+    "pkg/framework",
+    "pkg/framework/ginkgowrapper",
+    "pkg/framework/log",
+    "pkg/framework/operators",
+    "pkg/framework/qdrmanagement",
+    "pkg/framework/qdrmanagement/entities",
+  ]
+  pruneopts = "UT"
+  revision = "99b481bc493c277534fca594049bd1b120a6e03f"
+
+[[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
   name = "github.com/spf13/pflag"
   packages = ["."]
@@ -706,6 +722,13 @@
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/gomega",
+    "github.com/rh-messaging/shipshape/pkg/api/client/amqp",
+    "github.com/rh-messaging/shipshape/pkg/framework",
+    "github.com/rh-messaging/shipshape/pkg/framework/ginkgowrapper",
+    "github.com/rh-messaging/shipshape/pkg/framework/log",
+    "github.com/rh-messaging/shipshape/pkg/framework/operators",
+    "github.com/rh-messaging/shipshape/pkg/framework/qdrmanagement",
+    "github.com/rh-messaging/shipshape/pkg/framework/qdrmanagement/entities",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1",
@@ -716,6 +739,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/util/uuid",
     "k8s.io/apimachinery/pkg/util/wait",
+    "k8s.io/client-go/dynamic",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
