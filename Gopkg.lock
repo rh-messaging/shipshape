@@ -254,6 +254,26 @@
   version = "v1.7.1"
 
 [[projects]]
+  digest = "1:e6deb5269daaf7ab91e3a04a1570d690a60a982d595d090882cee3ded817bb04"
+  name = "github.com/openshift/api"
+  packages = ["route/v1"]
+  pruneopts = "UT"
+  revision = "0d921e363e951d89f583292c60d013c318df64dc"
+  version = "v3.9.0"
+
+[[projects]]
+  digest = "1:6b1540f37963c713da08d8463791201d8469e8c755ed66a0b54ee424b15ea401"
+  name = "github.com/openshift/client-go"
+  packages = [
+    "route/clientset/versioned",
+    "route/clientset/versioned/scheme",
+    "route/clientset/versioned/typed/route/v1",
+  ]
+  pruneopts = "UT"
+  revision = "1fa528d3be060e4c7178eb69e76d37cf7e699e3c"
+  version = "v3.9.0"
+
+[[projects]]
   digest = "1:9072181164e616e422cbfbe48ca9ac249a4d76301ca0876c9f56b937cf214a2f"
   name = "github.com/pborman/uuid"
   packages = ["."]
@@ -275,22 +295,6 @@
   pruneopts = "UT"
   revision = "0be1b92a6df0e4f5cb0a5d15fb7f643d0ad93ce6"
   version = "v3.0.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:61ce832e5ac83f1ad6d545124b3a34dd7648cdca35abc4dd35c7af28baa1faac"
-  name = "github.com/rh-messaging/shipshape"
-  packages = [
-    "pkg/api/client/amqp",
-    "pkg/framework",
-    "pkg/framework/ginkgowrapper",
-    "pkg/framework/log",
-    "pkg/framework/operators",
-    "pkg/framework/qdrmanagement",
-    "pkg/framework/qdrmanagement/entities",
-  ]
-  pruneopts = "UT"
-  revision = "99b481bc493c277534fca594049bd1b120a6e03f"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -722,13 +726,7 @@
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/gomega",
-    "github.com/rh-messaging/shipshape/pkg/api/client/amqp",
-    "github.com/rh-messaging/shipshape/pkg/framework",
-    "github.com/rh-messaging/shipshape/pkg/framework/ginkgowrapper",
-    "github.com/rh-messaging/shipshape/pkg/framework/log",
-    "github.com/rh-messaging/shipshape/pkg/framework/operators",
-    "github.com/rh-messaging/shipshape/pkg/framework/qdrmanagement",
-    "github.com/rh-messaging/shipshape/pkg/framework/qdrmanagement/entities",
+    "github.com/openshift/client-go/route/clientset/versioned",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1",
@@ -736,7 +734,9 @@
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/util/uuid",
     "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/client-go/dynamic",

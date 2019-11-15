@@ -1,6 +1,6 @@
 package entities
 
-// EntityCommon represents the validation attributes
+// EntityCommon represents the common attributes
 // of any Dispatch Router Entity
 type EntityCommon struct {
 	Name     string `json:"name"`

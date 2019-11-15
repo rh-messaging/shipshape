@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	defaultHost          = "http://127.0.0.1:8080"
+	defaultHost = "http://127.0.0.1:8080"
 )
 
 // TestContextType contains test settings and global state.

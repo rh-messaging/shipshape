@@ -25,6 +25,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	routev1 "github.com/openshift/client-go/route/clientset/versioned"
 	e2elog "github.com/rh-messaging/shipshape/pkg/framework/log"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
@@ -46,6 +47,11 @@ type ClientSet struct {
 	KubeClient clientset.Interface
 	ExtClient  apiextension.Interface
 	DynClient  dynamic.Interface
+	OcpClient  ocpClient
+}
+
+type ocpClient struct {
+	RoutesClient *routev1.Clientset
 }
 
 // ContextData holds clients and data related with namespaces
@@ -78,13 +84,13 @@ type Framework struct {
 
 // NewFramework creates a test framework
 func NewFramework(baseName string,
-                  contexts ...string) *Framework {
-    f := &Framework{
-        BaseName: baseName,
-        ContextMap: make(map[string] *ContextData),
-    }
-    f.BeforeEach(contexts...)
-    return f
+	contexts ...string) *Framework {
+	f := &Framework{
+		BaseName:   baseName,
+		ContextMap: make(map[string]*ContextData),
+	}
+	f.BeforeEach(contexts...)
+	return f
 }
 
 // BeforeEach gets clients and makes a namespace
@@ -153,7 +159,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 		gomega.Expect(namespace).NotTo(gomega.BeNil())
 
-		// TODO Backport change from qdr-operator's framework
+		// Verify if Cert Manager is installed
 		_, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("issuers.certmanager.k8s.io", metav1.GetOptions{})
 		certManagerPresent := false
 		if err == nil {
@@ -163,24 +169,32 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 
 		// Initializing the context
-		f.ContextMap[context] = &ContextData{
+		ctx := &ContextData{
 			Id:                 context,
 			Namespace:          namespace.GetName(),
 			UniqueName:         namespace.GetName(),
 			Clients:            clients,
 			CertManagerPresent: certManagerPresent,
 		}
+		f.ContextMap[context] = ctx
+
+		// OpenShift specific initialization
+		if ctx.IsOpenShift() {
+			ctx.Clients.OcpClient.RoutesClient, err = routev1.NewForConfig(restConfig)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		}
 
 		// Initializing supported operators on given context
 		// TODO Define new argument to control operators to deploy (or to ignore)
+		ctx.OperatorMap = map[operators.OperatorType]operators.OperatorSetup{}
 		for operatorType, builder := range operators.SupportedOperators {
-			operator, err := builder.NewForConfig(f.ContextMap[context].Namespace, restConfig)
+			operator, err := builder.NewForConfig(ctx.Namespace, restConfig)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-			f.ContextMap[context].OperatorMap[operatorType] = operator
+			ctx.OperatorMap[operatorType] = operator
 		}
 
 		if !f.SkipNamespaceCreation {
-			f.ContextMap[context].AddNamespacesToDelete(namespace)
+			ctx.AddNamespacesToDelete(namespace)
 		}
 
 	}
