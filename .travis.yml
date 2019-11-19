@@ -1,0 +1,47 @@
+sudo: required
+dist: bionic
+language: go
+go:
+  - master
+  - 1.13.x
+  - 1.12.x
+
+go_import_path: github.com/rh-messaging/shipshape
+
+services:
+  - docker
+
+git:
+  depth: 1
+
+env:
+  global:
+    - KUBECONFIG=$HOME/.kube/config
+    - KUBERNETES_VERSION=$(curl -k -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+
+before_install:
+  # Install Go Dep
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
+  # Setup kubectl
+  - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
+  - chmod +x kubectl
+  - sudo mv kubectl /usr/local/bin/
+
+  # Get tools
+  - go get sigs.k8s.io/kind
+
+  # Create a new Kubernetes cluster using KinD
+  - kind create cluster
+  - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+  - kubectl cluster-info
+
+  # Setup
+  - cd $GOPATH/src/github.com/rh-messaging/shipshape
+  - dep ensure -v && dep status
+
+script:
+  - cd $GOPATH/src/github.com/rh-messaging/shipshape
+  - make
+  - make cluster-test
+
