@@ -58,14 +58,14 @@ func WaitForDeployment(kubeclient kubernetes.Interface, namespace, name string, 
 		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Logf("Waiting for availability of %s deployment\n", name)
+				log.Logf("Waiting for availability of %s deployment", name)
 				return false, nil
 			}
 			return false, err
 		}
 
 		// For debugging purposes
-		log.Logf("Waiting for full availability of %s deployment (Replicas: %d/%d - Available: %d/%d - Updated: %d/%d - Ready: %d/%d - Unavailable: %d/%d)\n",
+		log.Logf("Waiting for full availability of %s deployment (Replicas: %d/%d - Available: %d/%d - Updated: %d/%d - Ready: %d/%d - Unavailable: %d/%d)",
 			name,
 			deployment.Status.Replicas, replicas,
 			deployment.Status.AvailableReplicas, replicas,
@@ -87,7 +87,7 @@ func WaitForDeployment(kubeclient kubernetes.Interface, namespace, name string, 
 	if err != nil {
 		return err
 	}
-	log.Logf("Deployment available (%d/%d)\n", replicas, replicas)
+	log.Logf("Deployment available (%d/%d)", replicas, replicas)
 	return nil
 }
 
@@ -100,7 +100,7 @@ func WaitForDaemonSet(kubeclient kubernetes.Interface, namespace, name string, c
 		ds, err := kubeclient.AppsV1().DaemonSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Logf("Waiting for availability of %s daemon set\n", name)
+				log.Logf("Waiting for availability of %s daemon set", name)
 				return false, nil
 			}
 			return false, err
@@ -109,13 +109,13 @@ func WaitForDaemonSet(kubeclient kubernetes.Interface, namespace, name string, c
 		if int(ds.Status.NumberReady) >= count {
 			return true, nil
 		}
-		log.Logf("Waiting for full availability of %s daemonset (%d/%d)\n", name, ds.Status.NumberReady, count)
+		log.Logf("Waiting for full availability of %s daemonset (%d/%d)", name, ds.Status.NumberReady, count)
 		return false, nil
 	})
 	if err != nil {
 		return err
 	}
-	log.Logf("Daemonset ready (%d)\n", count)
+	log.Logf("Daemonset ready (%d)", count)
 	return nil
 }
 
@@ -136,13 +136,13 @@ func WaitForDeletion(dynclient client.Client, obj runtime.Object, retryInterval,
 		if err != nil {
 			return false, err
 		}
-		log.Logf("Waiting for %s %s to be deleted\n", kind, key)
+		log.Logf("Waiting for %s %s to be deleted", kind, key)
 		return false, nil
 	})
 	if err != nil {
 		return err
 	}
-	log.Logf("%s %s was deleted\n", kind, key)
+	log.Logf("%s %s was deleted", kind, key)
 	return nil
 }
 
@@ -157,7 +157,7 @@ func WaitForDeploymentDeleted(ctx context.Context, kubeclient kubernetes.Interfa
 		}
 
 		// For debugging purposes
-		log.Logf("Waiting for deletion of %s deployment (Replicas: %d/0 - Available: %d/0 - Updated: %d/0 - Ready: %d/0 - Unavailable: %d/0)\n",
+		log.Logf("Waiting for deletion of %s deployment (Replicas: %d/0 - Available: %d/0 - Updated: %d/0 - Ready: %d/0 - Unavailable: %d/0)",
 			name,
 			deployment.Status.Replicas,
 			deployment.Status.AvailableReplicas,
