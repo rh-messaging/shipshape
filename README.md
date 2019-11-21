@@ -1,6 +1,9 @@
 # Shipshape
 Kubernetes and OpenShift Operator test framework, written in Go.
 
+# Build status
+[![Build Status](https://travis-ci.com/rh-messaging/shipshape.svg?branch=master)](https://travis-ci.com/rh-messaging/shipshape)
+
 # Description
 
 Shipshape is a Kubernetes and OpenShift framework that helps testing all supported
