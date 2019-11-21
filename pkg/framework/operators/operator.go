@@ -13,7 +13,7 @@ type OperatorSetup interface {
 	Namespace() string
 	Image() string
 	Name() string
-	CRDName() string
+	CRDNames() []string
 	GroupName() string
 	APIVersion() string
 	Setup() error
