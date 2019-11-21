@@ -141,9 +141,11 @@ func (q *QdrOperator) TeardownSuite() error {
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s cluster role binding: %v", q.Name(), err)
 	}
-	err = q.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(q.CRDName(), metav1.NewDeleteOptions(1))
-	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("failed to delete %s crd: %v", q.Name(), err)
+	for _, crdName := range q.CRDNames() {
+		err = q.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crdName, metav1.NewDeleteOptions(1))
+		if err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to delete %s crd: %v", q.Name(), err)
+		}
 	}
 
 	log.Logf("%s teardown suite successful", q.Name())
@@ -154,8 +156,8 @@ func (q *QdrOperator) Image() string {
 	return "quay.io/interconnectedcloud/qdr-operator"
 }
 
-func (q *QdrOperator) CRDName() string {
-	return "interconnects.interconnectedcloud.github.io"
+func (q *QdrOperator) CRDNames() []string {
+	return []string{"interconnects.interconnectedcloud.github.io"}
 }
 
 func (q *QdrOperator) GroupName() string {
@@ -320,25 +322,27 @@ func (q *QdrOperator) SetupClusterRoleBinding() error {
 }
 
 func (q *QdrOperator) SetupCRD() error {
-	crd := &apiextv1b1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: q.CRDName(),
-		},
-		Spec: apiextv1b1.CustomResourceDefinitionSpec{
-			Group: q.GroupName(),
-			Names: apiextv1b1.CustomResourceDefinitionNames{
-				Kind:     "Interconnect",
-				ListKind: "InterconnectList",
-				Plural:   "interconnects",
-				Singular: "interconnect",
+	for _, crdName := range q.CRDNames() {
+		crd := &apiextv1b1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: crdName,
 			},
-			Scope:   "Namespaced",
-			Version: q.APIVersion(),
-		},
-	}
-	_, err := q.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
-	if err != nil {
-		return fmt.Errorf("create qdr-operator crd failed: %v", err)
+			Spec: apiextv1b1.CustomResourceDefinitionSpec{
+				Group: q.GroupName(),
+				Names: apiextv1b1.CustomResourceDefinitionNames{
+					Kind:     "Interconnect",
+					ListKind: "InterconnectList",
+					Plural:   "interconnects",
+					Singular: "interconnect",
+				},
+				Scope:   "Namespaced",
+				Version: q.APIVersion(),
+			},
+		}
+		_, err := q.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+		if err != nil {
+			return fmt.Errorf("create qdr-operator crd failed: %v", err)
+		}
 	}
 	return nil
 }
