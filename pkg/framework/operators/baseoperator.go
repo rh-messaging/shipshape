@@ -15,7 +15,7 @@ import (
 
 	"k8s.io/client-go/rest"
 	"net/http"
-	"shipshape/pkg/framework/log"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"strings"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
