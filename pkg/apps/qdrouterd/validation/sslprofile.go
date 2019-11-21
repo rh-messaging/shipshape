@@ -3,11 +3,11 @@ package validation
 import (
 	"fmt"
 	"github.com/interconnectedcloud/qdr-operator/pkg/apis/interconnectedcloud/v1alpha1"
+	"github.com/onsi/gomega"
 	"github.com/rh-messaging/shipshape/pkg/apps/qdrouterd/deployment"
-	"github.com/rh-messaging/shipshape/pkg/framework"
 	"github.com/rh-messaging/shipshape/pkg/apps/qdrouterd/qdrmanagement"
 	"github.com/rh-messaging/shipshape/pkg/apps/qdrouterd/qdrmanagement/entities"
-	"github.com/onsi/gomega"
+	"github.com/rh-messaging/shipshape/pkg/framework"
 	"k8s.io/api/core/v1"
 )
 
