@@ -20,7 +20,7 @@ type QdrOperatorBuilder struct{}
 
 func (q *QdrOperatorBuilder) NewForConfig(namespace string,
 	restConfig *rest.Config,
-	operatorConfig OperatorConfig) (OperatorSetup, error) {
+	operatorConfig OperatorConfig) (OperatorDescription, error) {
 	qdr := &QdrOperator{
 		namespace:  namespace,
 		restConfig: restConfig,

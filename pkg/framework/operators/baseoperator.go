@@ -51,7 +51,7 @@ type DefinitionStruct struct {
 
 func (b *BaseOperatorBuilder) NewForConfig(namespace string,
 	restConfig *rest.Config,
-	operatorConfig OperatorConfig) (OperatorSetup, error) {
+	operatorConfig OperatorConfig) (OperatorDescription, error) {
 	baseOperator := &BaseOperator{}
 	if kubeClient, err := clientset.NewForConfig(restConfig); err != nil {
 		return nil, err

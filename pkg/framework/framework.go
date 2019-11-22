@@ -75,7 +75,7 @@ type ContextData struct {
 	// test multiple times in parallel.
 	UniqueName         string
 	CertManagerPresent bool // if crd is detected
-	OperatorMap        map[operators.OperatorType]operators.OperatorSetup
+	OperatorMap        map[operators.OperatorType]operators.OperatorDescription
 	isOpenShift        *bool
 }
 
@@ -200,7 +200,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 
 		// Initializing needed operators on given context
-		ctx.OperatorMap = map[operators.OperatorType]operators.OperatorSetup{}
+		ctx.OperatorMap = map[operators.OperatorType]operators.OperatorDescription{}
 		for operatorType, builder := range operators.SupportedOperators {
 			if contains(operatorType, f.operatorTypes) {
 				operator, err := builder.NewForConfig(ctx.Namespace, restConfig, f.operatorConfig)

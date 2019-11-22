@@ -7,7 +7,7 @@ import (
 type OperatorSetupBuilder interface {
 	NewForConfig(namespace string,
 		restConfig *restclient.Config,
-		operatorConfig OperatorConfig) (OperatorSetup, error)
+		operatorConfig OperatorConfig) (OperatorDescription, error)
 
 }
 
@@ -18,7 +18,7 @@ type OperatorConfig interface {
 	KeepCRD() bool
 }
 
-type OperatorSetup interface {
+type OperatorDescription interface {
 	Interface() interface{}
 	Namespace() string
 	Image() string
