@@ -70,7 +70,7 @@ func (b *BaseOperatorBuilder) NewForConfig(namespace string,
 	baseOperator.yamls = operatorConfig.YamlUrls()
 	baseOperator.keepCRD = operatorConfig.KeepCRD()
 	if err := baseOperator.Setup(); err != nil {
-		return nil, fmt.Errorf("failed to set up operator %s: %v", operatorName, err)
+		return nil, fmt.Errorf("failed to set up operator %s: %v", operatorConfig.OperatorName(), err)
 	}
 	return baseOperator, nil
 }
@@ -157,12 +157,12 @@ func (b *BaseOperator) SetupYamls() error {
 
 		jsonItem, err := b.loadJson(url)
 		if err != nil {
-			return fmt.Errorf("failed to load yaml #%i: %v", i, err)
+			return fmt.Errorf("failed to load yaml #%d: %v", i, err)
 		}
 		var def DefinitionStruct
 		err = json.Unmarshal(jsonItem, &def)
 		if err != nil {
-			return fmt.Errorf("failed to load json #%i: %v", i, err)
+			return fmt.Errorf("failed to load json #%d: %v", i, err)
 		}
 		switch def.Kind {
 		case "ServiceAccount":

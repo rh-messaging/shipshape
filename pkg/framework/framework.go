@@ -56,7 +56,7 @@ type ocpClient struct {
 
 func contains(target operators.OperatorType, collection []operators.OperatorType) bool {
 	for _,a := range collection {
-		if (target == a) {
+		if target == a {
 			return true
 		}
 	}
