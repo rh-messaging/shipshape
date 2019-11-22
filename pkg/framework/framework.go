@@ -54,6 +54,15 @@ type ocpClient struct {
 	RoutesClient *routev1.Clientset
 }
 
+func contains(target operators.OperatorType, collection []operators.OperatorType) bool {
+	for _,a := range collection {
+		if (target == a) {
+			return true
+		}
+	}
+	return false
+}
+
 // ContextData holds clients and data related with namespaces
 //             created within
 type ContextData struct {
@@ -80,14 +89,20 @@ type Framework struct {
 	cleanupHandleEach     CleanupActionHandle
 	cleanupHandleSuite    CleanupActionHandle
 	afterEachDone         bool
+	operatorConfig        operators.OperatorConfig
+	operatorTypes         []operators.OperatorType
 }
 
 // NewFramework creates a test framework
 func NewFramework(baseName string,
+	operatorTypes []operators.OperatorType,
+	operatorConfig operators.OperatorConfig,
 	contexts ...string) *Framework {
 	f := &Framework{
 		BaseName:   baseName,
 		ContextMap: make(map[string]*ContextData),
+		operatorTypes: operatorTypes,
+		operatorConfig: operatorConfig,
 	}
 	f.BeforeEach(contexts...)
 	return f
@@ -184,13 +199,14 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		}
 
-		// Initializing supported operators on given context
-		// TODO Define new argument to control operators to deploy (or to ignore)
+		// Initializing needed operators on given context
 		ctx.OperatorMap = map[operators.OperatorType]operators.OperatorSetup{}
 		for operatorType, builder := range operators.SupportedOperators {
-			operator, err := builder.NewForConfig(ctx.Namespace, restConfig)
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-			ctx.OperatorMap[operatorType] = operator
+			if contains(operatorType, f.operatorTypes) {
+				operator, err := builder.NewForConfig(ctx.Namespace, restConfig, f.operatorConfig)
+				gomega.Expect(err).NotTo(gomega.HaveOccurred())
+				ctx.OperatorMap[operatorType] = operator
+			}
 		}
 
 		if !f.SkipNamespaceCreation {

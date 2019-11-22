@@ -18,7 +18,9 @@ import (
 
 type QdrOperatorBuilder struct{}
 
-func (q *QdrOperatorBuilder) NewForConfig(namespace string, restConfig *rest.Config) (OperatorSetup, error) {
+func (q *QdrOperatorBuilder) NewForConfig(namespace string,
+	restConfig *rest.Config,
+	operatorConfig OperatorConfig) (OperatorSetup, error) {
 	qdr := &QdrOperator{
 		namespace:  namespace,
 		restConfig: restConfig,

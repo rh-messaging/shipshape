@@ -49,13 +49,9 @@ type DefinitionStruct struct {
 	Spec       interface{} `json:"spec"`
 }
 
-
 func (b *BaseOperatorBuilder) NewForConfig(namespace string,
-	apiVersion string,
-	operatorName string,
 	restConfig *rest.Config,
-	keepCRD bool,
-	yamlUrls ...string) (OperatorSetup, error) {
+	operatorConfig OperatorConfig) (OperatorSetup, error) {
 	baseOperator := &BaseOperator{}
 	if kubeClient, err := clientset.NewForConfig(restConfig); err != nil {
 		return nil, err
@@ -69,10 +65,10 @@ func (b *BaseOperatorBuilder) NewForConfig(namespace string,
 		baseOperator.extClient = extClient
 	}
 	baseOperator.namespace = namespace
-	baseOperator.apiVersion = apiVersion
-	baseOperator.operatorName = operatorName
-	baseOperator.yamls = yamlUrls
-	baseOperator.keepCRD = keepCRD
+	baseOperator.apiVersion = operatorConfig.ApiVersion()
+	baseOperator.operatorName = operatorConfig.OperatorName()
+	baseOperator.yamls = operatorConfig.YamlUrls()
+	baseOperator.keepCRD = operatorConfig.KeepCRD()
 	if err := baseOperator.Setup(); err != nil {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", operatorName, err)
 	}
@@ -289,4 +285,28 @@ func (b *BaseOperator) TeardownSuite() error {
 		}
 		return nil
 	}
+}
+
+
+type BaseOperatorConfig struct {
+	apiVersion string
+	operatorName string
+	yamlUrls []string
+	keepCRD bool
+}
+
+func (b *BaseOperatorConfig) ApiVersion() string {
+	return b.apiVersion
+}
+
+func (b *BaseOperatorConfig) OperatorName() string {
+	return b.operatorName
+}
+
+func (b *BaseOperatorConfig) YamlUrls() []string {
+	return b.yamlUrls
+}
+
+func (b *BaseOperatorConfig) KeepCRD() bool {
+	return b.keepCRD
 }

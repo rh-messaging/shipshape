@@ -5,7 +5,17 @@ import (
 )
 
 type OperatorSetupBuilder interface {
-	NewForConfig(namespace string, restConfig *restclient.Config) (OperatorSetup, error)
+	NewForConfig(namespace string,
+		restConfig *restclient.Config,
+		operatorConfig OperatorConfig) (OperatorSetup, error)
+
+}
+
+type OperatorConfig interface {
+	ApiVersion() string
+	OperatorName() string
+	YamlUrls() []string
+	KeepCRD() bool
 }
 
 type OperatorSetup interface {
