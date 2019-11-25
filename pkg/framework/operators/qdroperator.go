@@ -367,13 +367,13 @@ func (q *QdrOperator) SetupDeployment() error {
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"operatorName": q.Name(),
+					"name": q.Name(),
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"operatorName": q.Name(),
+						"name": q.Name(),
 					},
 				},
 				Spec: corev1.PodSpec{
