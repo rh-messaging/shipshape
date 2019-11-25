@@ -55,7 +55,7 @@ type ocpClient struct {
 }
 
 func contains(target operators.OperatorType, collection []operators.OperatorType) bool {
-	for _,a := range collection {
+	for _, a := range collection {
 		if target == a {
 			return true
 		}
@@ -75,7 +75,7 @@ type ContextData struct {
 	// test multiple times in parallel.
 	UniqueName         string
 	CertManagerPresent bool // if crd is detected
-	OperatorMap        map[operators.OperatorType]operators.OperatorDescription
+	OperatorMap        map[operators.OperatorType]operators.OperatorAccessor
 	isOpenShift        *bool
 }
 
@@ -89,20 +89,17 @@ type Framework struct {
 	cleanupHandleEach     CleanupActionHandle
 	cleanupHandleSuite    CleanupActionHandle
 	afterEachDone         bool
-	operatorConfig        operators.OperatorConfig
-	operatorTypes         []operators.OperatorType
+	builders []operators.OperatorSetupBuilder
 }
 
 // NewFramework creates a test framework
 func NewFramework(baseName string,
-	operatorTypes []operators.OperatorType,
-	operatorConfig operators.OperatorConfig,
+	builders []operators.OperatorSetupBuilder,
 	contexts ...string) *Framework {
 	f := &Framework{
 		BaseName:   baseName,
 		ContextMap: make(map[string]*ContextData),
-		operatorTypes: operatorTypes,
-		operatorConfig: operatorConfig,
+		builders: builders,
 	}
 	f.BeforeEach(contexts...)
 	return f
@@ -200,13 +197,11 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 
 		// Initializing needed operators on given context
-		ctx.OperatorMap = map[operators.OperatorType]operators.OperatorDescription{}
-		for operatorType, builder := range operators.SupportedOperators {
-			if contains(operatorType, f.operatorTypes) {
-				operator, err := builder.NewForConfig(ctx.Namespace, restConfig, f.operatorConfig)
-				gomega.Expect(err).NotTo(gomega.HaveOccurred())
-				ctx.OperatorMap[operatorType] = operator
-			}
+		ctx.OperatorMap = map[operators.OperatorType]operators.OperatorAccessor{}
+		for _, builder := range f.builders {
+			operator, err := builder.Build()
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			ctx.OperatorMap[builder.OperatorType()] = operator
 		}
 
 		if !f.SkipNamespaceCreation {

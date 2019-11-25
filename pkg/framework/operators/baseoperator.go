@@ -5,24 +5,32 @@ import (
 	"fmt"
 	"github.com/ghodss/yaml"
 	"io/ioutil"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	apiextv1b1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	clientset "k8s.io/client-go/kubernetes"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	clientset "k8s.io/client-go/kubernetes"
 
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"net/http"
-	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"strings"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 )
 
 //All the base operator stuff goes into this class. All operator-specific things go into specific classes.
-type BaseOperatorBuilder struct{}
+type BaseOperatorBuilder struct {
+	yamls        []string
+	image        string
+	namespace    string
+	restConfig   *rest.Config
+	operatorName string
+	keepCdrs     bool
+	apiVersion   string
+	canEdit      bool
+}
 type BaseOperator struct {
 	kubeClient        *clientset.Clientset
 	extClient         *apiextension.Clientset
@@ -34,12 +42,12 @@ type BaseOperator struct {
 	operatorName      string
 	apiVersion        string
 	yamls             []string
-	deploymentConfig appsv1.Deployment
-	serviceAccount corev1.ServiceAccount
-	role rbacv1.Role
-	roleBinding rbacv1.RoleBinding
-	crds []apiextv1b1.CustomResourceDefinition
-	keepCRD bool
+	deploymentConfig  appsv1.Deployment
+	serviceAccount    corev1.ServiceAccount
+	role              rbacv1.Role
+	roleBinding       rbacv1.RoleBinding
+	crds              []apiextv1b1.CustomResourceDefinition
+	keepCRD           bool
 }
 
 type DefinitionStruct struct {
@@ -49,28 +57,105 @@ type DefinitionStruct struct {
 	Spec       interface{} `json:"spec"`
 }
 
-func (b *BaseOperatorBuilder) NewForConfig(namespace string,
-	restConfig *rest.Config,
-	operatorConfig OperatorConfig) (OperatorDescription, error) {
+func NewBuilder(restConfig *rest.Config) *BaseOperatorBuilder {
+	b := &BaseOperatorBuilder{}
+	b.restConfig = restConfig
+	b.canEdit = true
+	return b
+}
+
+func (b *BaseOperatorBuilder) OperatorType() OperatorType {
+	return OperatorTypeBase
+}
+
+func (b *BaseOperatorBuilder) WithNamespace(namespace string) *BaseOperatorBuilder {
+	if (b.canEdit) {
+		b.namespace = namespace
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+func (b *BaseOperatorBuilder) WithImage(image string) *BaseOperatorBuilder {
+	if (b.canEdit) {
+		b.image = image
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+func (b *BaseOperatorBuilder) WithYamls(yamls []string) *BaseOperatorBuilder {
+	if (b.canEdit) {
+		b.yamls = yamls
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+func (b *BaseOperatorBuilder) AddYaml(yaml string) *BaseOperatorBuilder {
+	if (b.canEdit) {
+		b.yamls = append(b.yamls, yaml)
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+func (b *BaseOperatorBuilder) WithOperatorName(name string) *BaseOperatorBuilder {
+	if (b.canEdit) {
+		b.operatorName = name
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) *BaseOperatorBuilder {
+	if (b.canEdit) {
+		b.keepCdrs = keepCdrs
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) *BaseOperatorBuilder {
+	if (b.canEdit) {
+		b.apiVersion = apiVersion
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+func (b *BaseOperatorBuilder) Finalize() *BaseOperatorBuilder {
+	b.canEdit = false
+	return b
+}
+
+func (b *BaseOperatorBuilder) Build() (OperatorAccessor, error) {
 	baseOperator := &BaseOperator{}
-	if kubeClient, err := clientset.NewForConfig(restConfig); err != nil {
+	if kubeClient, err := clientset.NewForConfig(b.restConfig); err != nil {
 		return nil, err
 	} else {
 		baseOperator.kubeClient = kubeClient
 	}
 
-	if extClient, err := apiextension.NewForConfig(restConfig); err != nil {
+	if extClient, err := apiextension.NewForConfig(b.restConfig); err != nil {
 		return nil, err
 	} else {
 		baseOperator.extClient = extClient
 	}
-	baseOperator.namespace = namespace
-	baseOperator.apiVersion = operatorConfig.ApiVersion()
-	baseOperator.operatorName = operatorConfig.OperatorName()
-	baseOperator.yamls = operatorConfig.YamlUrls()
-	baseOperator.keepCRD = operatorConfig.KeepCRD()
+	baseOperator.namespace = b.namespace
+	baseOperator.apiVersion = b.apiVersion
+	baseOperator.operatorName = b.operatorName
+	baseOperator.yamls = b.yamls
+	baseOperator.keepCRD = b.keepCdrs
 	if err := baseOperator.Setup(); err != nil {
-		return nil, fmt.Errorf("failed to set up operator %s: %v", operatorConfig.OperatorName(), err)
+		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
 	}
 	return baseOperator, nil
 }
@@ -174,8 +259,12 @@ func (b *BaseOperator) SetupYamls() error {
 		case "CustomResourceDefinition":
 			b.setupCRD(jsonItem)
 		case "Deployment":
-			if err = json.Unmarshal(jsonItem, &b.deploymentConfig); err!=nil {
+			if err = json.Unmarshal(jsonItem, &b.deploymentConfig); err != nil {
 				b.errorItemLoad("deployment", jsonItem, err)
+			}
+			if b.image!="" {
+				//Customize the spec if that is requested
+				b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
 			}
 		default:
 			log.Logf("can't find item type %s", def.Kind)
@@ -185,7 +274,7 @@ func (b *BaseOperator) SetupYamls() error {
 }
 
 func (b *BaseOperator) setupDeployment() error {
-	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err!=nil {
+	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
 	// Should only have single container in deployment yaml.
@@ -227,7 +316,7 @@ func (b *BaseOperator) Setup() error {
 		return err
 	}
 	log.Logf("yamls setup complete, setting up deployment")
-	if err := b.setupDeployment(); err !=nil {
+	if err := b.setupDeployment(); err != nil {
 		return err
 	}
 	return nil
@@ -240,25 +329,25 @@ func (b *BaseOperator) TeardownEach() error {
 		err := b.kubeClient.CoreV1().
 			ServiceAccounts(b.namespace).
 			Delete(b.serviceAccount.Name, metav1.NewDeleteOptions(1))
-		if err!=nil && !apierrors.IsNotFound(err){
+		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		err = b.kubeClient.RbacV1().
 			Roles(b.namespace).
 			Delete(b.role.Name, metav1.NewDeleteOptions(1))
-		if err!=nil && !apierrors.IsNotFound(err){
+		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		err = b.kubeClient.RbacV1().
 			RoleBindings(b.namespace).
 			Delete(b.roleBinding.Name, metav1.NewDeleteOptions(1))
-		if err!=nil && !apierrors.IsNotFound(err){
+		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		err = b.kubeClient.AppsV1().
 			Deployments(b.namespace).
 			Delete(b.deploymentConfig.Name, metav1.NewDeleteOptions(1))
-		if err!=nil && !apierrors.IsNotFound(err){
+		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		log.Logf("%s teradown namespace succesful", b.namespace)
@@ -270,8 +359,8 @@ func (b *BaseOperator) TeardownSuite() error {
 	if b.keepCRD {
 		return nil
 	} else {
-		err:= b.TeardownEach()
-		if err!=nil {
+		err := b.TeardownEach()
+		if err != nil {
 			return err
 		}
 
@@ -279,34 +368,10 @@ func (b *BaseOperator) TeardownSuite() error {
 			err = b.extClient.ApiextensionsV1beta1().
 				CustomResourceDefinitions().Delete(
 				crd.Name, metav1.NewDeleteOptions(1))
-			if err!=nil && !apierrors.IsNotFound(err){
+			if err != nil && !apierrors.IsNotFound(err) {
 				return err
 			}
 		}
 		return nil
 	}
-}
-
-
-type BaseOperatorConfig struct {
-	apiVersion string
-	operatorName string
-	yamlUrls []string
-	keepCRD bool
-}
-
-func (b *BaseOperatorConfig) ApiVersion() string {
-	return b.apiVersion
-}
-
-func (b *BaseOperatorConfig) OperatorName() string {
-	return b.operatorName
-}
-
-func (b *BaseOperatorConfig) YamlUrls() []string {
-	return b.yamlUrls
-}
-
-func (b *BaseOperatorConfig) KeepCRD() bool {
-	return b.keepCRD
 }

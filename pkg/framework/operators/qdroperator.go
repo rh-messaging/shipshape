@@ -18,9 +18,10 @@ import (
 
 type QdrOperatorBuilder struct{}
 
+func (q *QdrOperatorBuilder) Build() (OperatorAccessor, error) {panic("implement me!")}
+
 func (q *QdrOperatorBuilder) NewForConfig(namespace string,
-	restConfig *rest.Config,
-	operatorConfig OperatorConfig) (OperatorDescription, error) {
+	restConfig *rest.Config) (OperatorAccessor, error) {
 	qdr := &QdrOperator{
 		namespace:  namespace,
 		restConfig: restConfig,
@@ -48,6 +49,10 @@ func (q *QdrOperatorBuilder) NewForConfig(namespace string,
 	}
 
 	return qdr, nil
+}
+
+func (q *QdrOperatorBuilder) OperatorType() OperatorType {
+	return OperatorTypeQdr
 }
 
 type QdrOperator struct {
@@ -362,13 +367,13 @@ func (q *QdrOperator) SetupDeployment() error {
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": q.Name(),
+					"operatorName": q.Name(),
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": q.Name(),
+						"operatorName": q.Name(),
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -386,7 +391,7 @@ func (q *QdrOperator) SetupDeployment() error {
 								},
 								{
 									Name:      "POD_NAME",
-									ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"}},
+									ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.operatorName"}},
 								},
 								{
 									Name:  "OPERATOR_NAME",
