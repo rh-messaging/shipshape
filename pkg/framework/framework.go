@@ -89,20 +89,22 @@ type Framework struct {
 	cleanupHandleEach     CleanupActionHandle
 	cleanupHandleSuite    CleanupActionHandle
 	afterEachDone         bool
-	builders []operators.OperatorSetupBuilder
+	builders              []operators.OperatorSetupBuilder
 }
 
 // NewFramework creates a test framework
 func NewFramework(baseName string,
-	builders []operators.OperatorSetupBuilder,
 	contexts ...string) *Framework {
 	f := &Framework{
 		BaseName:   baseName,
 		ContextMap: make(map[string]*ContextData),
-		builders: builders,
 	}
 	f.BeforeEach(contexts...)
 	return f
+}
+
+func (f *Framework) SetOperatorBuilders(builders ...operators.OperatorSetupBuilder) {
+	f.builders = builders
 }
 
 // BeforeEach gets clients and makes a namespace
@@ -198,6 +200,12 @@ func (f *Framework) BeforeEach(contexts ...string) {
 
 		// Initializing needed operators on given context
 		ctx.OperatorMap = map[operators.OperatorType]operators.OperatorAccessor{}
+		if f.builders == nil || len(f.builders) == 0 {
+			// populate builders with default values
+			for _, builder := range operators.SupportedOperators {
+				f.builders = append(f.builders, builder)
+			}
+		}
 		for _, builder := range f.builders {
 			operator, err := builder.Build()
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
@@ -207,7 +215,6 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		if !f.SkipNamespaceCreation {
 			ctx.AddNamespacesToDelete(namespace)
 		}
-
 	}
 
 	// setup the operators
