@@ -47,7 +47,9 @@ type BaseOperator struct {
 	deploymentConfig  appsv1.Deployment
 	serviceAccount    corev1.ServiceAccount
 	role              rbacv1.Role
+	cRole             rbacv1.ClusterRole
 	roleBinding       rbacv1.RoleBinding
+	cRoleBinding      rbacv1.ClusterRoleBinding
 	crds              []apiextv1b1.CustomResourceDefinition
 	keepCRD           bool
 }
@@ -220,7 +222,7 @@ func (b *BaseOperator) errorItemCreate(failedType string, parentError error) {
 }
 
 func (b *BaseOperator) setupServiceAccount(jsonObj []byte) {
-	log.Logf("setting up service account")
+	log.Logf("setting up service account (ns: %s)", b.namespace)
 	if err := json.Unmarshal(jsonObj, &b.serviceAccount); err != nil {
 		b.errorItemLoad("service account", jsonObj, err)
 	}
@@ -241,6 +243,17 @@ func (b *BaseOperator) setupRole(jsonObj []byte) {
 	}
 }
 
+func (b *BaseOperator) setupClusterRole(jsonObj []byte) {
+	if err := json.Unmarshal(jsonObj, &b.cRole); err != nil {
+		b.errorItemLoad("cluster role", jsonObj, err)
+	}
+
+	// Ignore errors if cluster level resource already exists
+	if _, err := b.kubeClient.RbacV1().ClusterRoles().Create(&b.cRole); err != nil {
+		b.errorItemCreate("cluster role", err)
+	}
+}
+
 func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 	log.Logf("Setting up Role Binding")
 	if err := json.Unmarshal(jsonObj, &b.roleBinding); err != nil {
@@ -248,6 +261,16 @@ func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 	}
 	if _, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(&b.roleBinding); err != nil {
 		b.errorItemCreate("role binding", err)
+	}
+}
+
+func (b *BaseOperator) setupClusterRoleBinding(jsonObj []byte) {
+	log.Logf("Setting up Cluster Role Binding")
+	if err := json.Unmarshal(jsonObj, &b.cRoleBinding); err != nil {
+		b.errorItemLoad("cluster role binding", jsonObj, err)
+	}
+	if _, err := b.kubeClient.RbacV1().ClusterRoleBindings().Create(&b.cRoleBinding); err != nil {
+		b.errorItemCreate("cluster role binding", err)
 	}
 }
 
@@ -280,18 +303,16 @@ func (b *BaseOperator) SetupYamls() error {
 			b.setupServiceAccount(jsonItem)
 		case "Role":
 			b.setupRole(jsonItem)
+		case "ClusterRole":
+			b.setupClusterRole(jsonItem)
 		case "RoleBinding":
 			b.setupRoleBinding(jsonItem)
+		case "ClusterRoleBinding":
+			b.setupClusterRoleBinding(jsonItem)
 		case "CustomResourceDefinition":
 			b.setupCRD(jsonItem)
 		case "Deployment":
-			if err = json.Unmarshal(jsonItem, &b.deploymentConfig); err != nil {
-				b.errorItemLoad("deployment", jsonItem, err)
-			}
-			if b.image!="" {
-				//Customize the spec if that is requested
-				b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
-			}
+			b.setupDeployment(jsonItem)
 		default:
 			log.Logf("can't find item type %s", def.Kind)
 		}
@@ -299,13 +320,18 @@ func (b *BaseOperator) SetupYamls() error {
 	return nil
 }
 
-func (b *BaseOperator) setupDeployment() error {
+func (b *BaseOperator) setupDeployment(jsonItem []byte) {
+	log.Logf("Setting up Deployment")
+	if err := json.Unmarshal(jsonItem, &b.deploymentConfig); err != nil {
+		b.errorItemLoad("deployment", jsonItem, err)
+	}
+	if b.image != "" {
+		//Customize the spec if that is requested
+		b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
+	}
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
-	// Should only have single container in deployment yaml.
-	b.image = b.deploymentConfig.Spec.Template.Spec.Containers[0].Image
-	return nil
 }
 
 func (b *BaseOperator) Namespace() string {
@@ -339,10 +365,6 @@ func (b *BaseOperator) APIVersion() string {
 func (b *BaseOperator) Setup() error {
 	log.Logf("setting up yamls: %v", b.yamls)
 	if err := b.SetupYamls(); err != nil {
-		return err
-	}
-	log.Logf("yamls setup complete, setting up deployment")
-	if err := b.setupDeployment(); err != nil {
 		return err
 	}
 	return nil
