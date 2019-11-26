@@ -12,37 +12,40 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"strings"
 )
 
-type QdrOperatorBuilder struct{}
+// Reusing BaseOperatorBuilder implementation and adding
+// the "abstract" method Build() and OperatorType()
+type QdrOperatorBuilder struct{
+	BaseOperatorBuilder
+}
 
-func (q *QdrOperatorBuilder) Build() (OperatorAccessor, error) {panic("implement me!")}
-
-func (q *QdrOperatorBuilder) NewForConfig(namespace string,
-	restConfig *rest.Config) (OperatorAccessor, error) {
-	qdr := &QdrOperator{
-		namespace:  namespace,
-		restConfig: restConfig,
+func (q *QdrOperatorBuilder) Build() (OperatorAccessor, error) {
+	qdr := &QdrOperator{}
+	if err := qdr.InitFromBaseOperatorBuilder(&q.BaseOperatorBuilder); err != nil {
+		return qdr, err
 	}
 
+	qdr.namespace = q.namespace
+	qdr.restConfig = q.restConfig
+
 	// initializing qdrclient
-	if client, err := qdrclientset.NewForConfig(restConfig); err != nil {
+	if client, err := qdrclientset.NewForConfig(q.restConfig); err != nil {
 		return qdr, err
 	} else {
 		qdr.qdrClient = client
 	}
 
 	// initializing kubeclient
-	if client, err := clientset.NewForConfig(restConfig); err != nil {
+	if client, err := clientset.NewForConfig(q.restConfig); err != nil {
 		return qdr, err
 	} else {
 		qdr.kubeClient = client
 	}
 
 	// initializing extclient
-	if client, err := apiextension.NewForConfig(restConfig); err != nil {
+	if client, err := apiextension.NewForConfig(q.restConfig); err != nil {
 		return qdr, err
 	} else {
 		qdr.extClient = client
@@ -56,13 +59,8 @@ func (q *QdrOperatorBuilder) OperatorType() OperatorType {
 }
 
 type QdrOperator struct {
-	namespace  string
-	restConfig *rest.Config
+	BaseOperator
 	qdrClient  qdrclientset.Interface
-	kubeClient clientset.Interface
-	extClient  apiextension.Interface
-
-	keepCRD bool
 }
 
 func (q *QdrOperator) Namespace() string {
@@ -160,7 +158,7 @@ func (q *QdrOperator) TeardownSuite() error {
 }
 
 func (q *QdrOperator) Image() string {
-	return "quay.io/interconnectedcloud/qdr-operator"
+	return q.image
 }
 
 func (q *QdrOperator) CRDNames() []string {
@@ -172,11 +170,11 @@ func (q *QdrOperator) GroupName() string {
 }
 
 func (q *QdrOperator) APIVersion() string {
-	return "v1alpha1"
+	return q.apiVersion
 }
 
 func (q *QdrOperator) Name() string {
-	return "qdr-operator"
+	return q.operatorName
 }
 
 func (q *QdrOperator) Interface() interface{} {
@@ -391,7 +389,7 @@ func (q *QdrOperator) SetupDeployment() error {
 								},
 								{
 									Name:      "POD_NAME",
-									ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.operatorName"}},
+									ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"}},
 								},
 								{
 									Name:  "OPERATOR_NAME",

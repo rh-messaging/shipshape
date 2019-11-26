@@ -31,7 +31,9 @@ type BaseOperatorBuilder struct {
 	apiVersion   string
 	canEdit      bool
 }
+
 type BaseOperator struct {
+	restConfig        *rest.Config
 	kubeClient        *clientset.Clientset
 	extClient         *apiextension.Clientset
 	namespace         string
@@ -57,27 +59,32 @@ type DefinitionStruct struct {
 	Spec       interface{} `json:"spec"`
 }
 
-func NewBuilder(restConfig *rest.Config) *BaseOperatorBuilder {
-	b := &BaseOperatorBuilder{}
+func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config) OperatorSetupBuilder {
 	b.restConfig = restConfig
 	b.canEdit = true
 	return b
 }
 
+func (b *BaseOperatorBuilder) WithNamespace(namespace string) OperatorSetupBuilder {
+	b.namespace = namespace
+	return b
+}
+
 func (b *BaseOperatorBuilder) OperatorType() OperatorType {
-	return OperatorTypeBase
+	// Delegate to concrete implementations
+	panic("implement me")
 }
 
-func (b *BaseOperatorBuilder) WithNamespace(namespace string) *BaseOperatorBuilder {
-	if (b.canEdit) {
-		b.namespace = namespace
-		return b
-	} else {
-		panic(fmt.Errorf("can't edit operator builder post-finalization"))
-	}
-}
-
-func (b *BaseOperatorBuilder) WithImage(image string) *BaseOperatorBuilder {
+//func (b *BaseOperatorBuilder) WithNamespace(namespace string) *BaseOperatorBuilder {
+//	if (b.canEdit) {
+//		b.namespace = namespace
+//		return b
+//	} else {
+//		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+//	}
+//}
+//
+func (b *BaseOperatorBuilder) WithImage(image string) OperatorSetupBuilder {
 	if (b.canEdit) {
 		b.image = image
 		return b
@@ -86,7 +93,7 @@ func (b *BaseOperatorBuilder) WithImage(image string) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) WithYamls(yamls []string) *BaseOperatorBuilder {
+func (b *BaseOperatorBuilder) WithYamls(yamls []string) OperatorSetupBuilder {
 	if (b.canEdit) {
 		b.yamls = yamls
 		return b
@@ -95,7 +102,7 @@ func (b *BaseOperatorBuilder) WithYamls(yamls []string) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) AddYaml(yaml string) *BaseOperatorBuilder {
+func (b *BaseOperatorBuilder) AddYaml(yaml string) OperatorSetupBuilder {
 	if (b.canEdit) {
 		b.yamls = append(b.yamls, yaml)
 		return b
@@ -104,7 +111,7 @@ func (b *BaseOperatorBuilder) AddYaml(yaml string) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) WithOperatorName(name string) *BaseOperatorBuilder {
+func (b *BaseOperatorBuilder) WithOperatorName(name string) OperatorSetupBuilder {
 	if (b.canEdit) {
 		b.operatorName = name
 		return b
@@ -113,7 +120,7 @@ func (b *BaseOperatorBuilder) WithOperatorName(name string) *BaseOperatorBuilder
 	}
 }
 
-func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) *BaseOperatorBuilder {
+func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) OperatorSetupBuilder {
 	if (b.canEdit) {
 		b.keepCdrs = keepCdrs
 		return b
@@ -122,7 +129,7 @@ func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) *BaseOperatorBuilder {
+func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) OperatorSetupBuilder {
 	if (b.canEdit) {
 		b.apiVersion = apiVersion
 		return b
@@ -158,6 +165,31 @@ func (b *BaseOperatorBuilder) Build() (OperatorAccessor, error) {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
 	}
 	return baseOperator, nil
+}
+
+func (b *BaseOperator) InitFromBaseOperatorBuilder(builder *BaseOperatorBuilder) error {
+	b.restConfig = builder.restConfig
+	b.image = builder.image
+	b.namespace = builder.namespace
+	b.apiVersion = builder.apiVersion
+	b.operatorName = builder.operatorName
+	b.yamls = builder.yamls
+	b.keepCRD = builder.keepCdrs
+
+	// Initialize clients
+	if kubeClient, err := clientset.NewForConfig(b.restConfig); err != nil {
+		return err
+	} else {
+		b.kubeClient = kubeClient
+	}
+
+	if extClient, err := apiextension.NewForConfig(b.restConfig); err != nil {
+		return err
+	} else {
+		b.extClient = extClient
+	}
+
+	return nil
 }
 
 func (b *BaseOperator) loadJson(url string) ([]byte, error) {

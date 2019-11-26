@@ -203,6 +203,8 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		if f.builders == nil || len(f.builders) == 0 {
 			// populate builders with default values
 			for _, builder := range operators.SupportedOperators {
+				builder.NewBuilder(restConfig)
+				builder.WithNamespace(namespace.GetName())
 				f.builders = append(f.builders, builder)
 			}
 		}
