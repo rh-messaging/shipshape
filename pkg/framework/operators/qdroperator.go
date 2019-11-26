@@ -8,10 +8,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextv1b1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
 	"strings"
 )
 
@@ -27,28 +25,11 @@ func (q *QdrOperatorBuilder) Build() (OperatorAccessor, error) {
 		return qdr, err
 	}
 
-	qdr.namespace = q.namespace
-	qdr.restConfig = q.restConfig
-
 	// initializing qdrclient
 	if client, err := qdrclientset.NewForConfig(q.restConfig); err != nil {
 		return qdr, err
 	} else {
 		qdr.qdrClient = client
-	}
-
-	// initializing kubeclient
-	if client, err := clientset.NewForConfig(q.restConfig); err != nil {
-		return qdr, err
-	} else {
-		qdr.kubeClient = client
-	}
-
-	// initializing extclient
-	if client, err := apiextension.NewForConfig(q.restConfig); err != nil {
-		return qdr, err
-	} else {
-		qdr.extClient = client
 	}
 
 	return qdr, nil

@@ -92,17 +92,51 @@ type Framework struct {
 	builders              []operators.OperatorSetupBuilder
 }
 
-// NewFramework creates a test framework
-func NewFramework(baseName string,
-	contexts ...string) *Framework {
-	f := &Framework{
-		BaseName:   baseName,
-		ContextMap: make(map[string]*ContextData),
-	}
-	f.BeforeEach(contexts...)
-	return f
+// Framework Builder type
+type Builder struct {
+	f        *Framework
+	contexts []string
 }
 
+// Helper for building frameworks with possible customizations
+func NewFrameworkBuilder(baseName string) Builder {
+	// In case no contexts available
+	if len(TestContext.GetContexts()) == 0 {
+		panic("No contexts available. Unable to create an instance of the Shipshape Framework.")
+	}
+
+	b := Builder{
+		f: &Framework{
+			BaseName: baseName,
+			ContextMap: make(map[string]*ContextData),
+		},
+		contexts: []string{TestContext.GetContexts()[0]},
+	}
+	return b
+}
+
+// Customize contexts to use (default is the current-context only)
+func (b Builder) WithContexts(contexts ...string) Builder {
+	b.contexts = contexts
+	return b
+}
+
+// Customize builders, by default when "BeforeEach" runs, the Framework iterates
+// through all supported operators (from SupportedOperators map) and initializes
+// all the default builder instances.
+func (b Builder) WithBuilders(builders ...operators.OperatorSetupBuilder) Builder {
+	b.f.SetOperatorBuilders(builders...)
+	return b
+}
+
+// Generates and initialize the Framework
+func (b Builder) Build() *Framework {
+	// Initialize restConfig and kube clients for each provided context
+	b.f.BeforeEach(b.contexts...)
+	return b.f
+}
+
+// Defines a custom set of builders for the given Framework instance
 func (f *Framework) SetOperatorBuilders(builders ...operators.OperatorSetupBuilder) {
 	f.builders = builders
 }
@@ -203,12 +237,14 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		if f.builders == nil || len(f.builders) == 0 {
 			// populate builders with default values
 			for _, builder := range operators.SupportedOperators {
-				builder.NewBuilder(restConfig)
-				builder.WithNamespace(namespace.GetName())
 				f.builders = append(f.builders, builder)
 			}
+		} else {
+			log.Logf("CUSTOM BUILDERS PROVIDED")
 		}
 		for _, builder := range f.builders {
+			builder.NewBuilder(restConfig)
+			builder.WithNamespace(namespace.GetName())
 			operator, err := builder.Build()
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			ctx.OperatorMap[builder.OperatorType()] = operator

@@ -29,7 +29,7 @@ type BaseOperatorBuilder struct {
 	operatorName string
 	keepCdrs     bool
 	apiVersion   string
-	canEdit      bool
+	finalized    bool
 }
 
 type BaseOperator struct {
@@ -61,13 +61,16 @@ type DefinitionStruct struct {
 
 func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config) OperatorSetupBuilder {
 	b.restConfig = restConfig
-	b.canEdit = true
 	return b
 }
 
 func (b *BaseOperatorBuilder) WithNamespace(namespace string) OperatorSetupBuilder {
-	b.namespace = namespace
-	return b
+	if !b.finalized {
+		b.namespace = namespace
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
 }
 
 func (b *BaseOperatorBuilder) OperatorType() OperatorType {
@@ -75,17 +78,8 @@ func (b *BaseOperatorBuilder) OperatorType() OperatorType {
 	panic("implement me")
 }
 
-//func (b *BaseOperatorBuilder) WithNamespace(namespace string) *BaseOperatorBuilder {
-//	if (b.canEdit) {
-//		b.namespace = namespace
-//		return b
-//	} else {
-//		panic(fmt.Errorf("can't edit operator builder post-finalization"))
-//	}
-//}
-//
 func (b *BaseOperatorBuilder) WithImage(image string) OperatorSetupBuilder {
-	if (b.canEdit) {
+	if !b.finalized {
 		b.image = image
 		return b
 	} else {
@@ -94,7 +88,7 @@ func (b *BaseOperatorBuilder) WithImage(image string) OperatorSetupBuilder {
 }
 
 func (b *BaseOperatorBuilder) WithYamls(yamls []string) OperatorSetupBuilder {
-	if (b.canEdit) {
+	if !b.finalized {
 		b.yamls = yamls
 		return b
 	} else {
@@ -103,7 +97,7 @@ func (b *BaseOperatorBuilder) WithYamls(yamls []string) OperatorSetupBuilder {
 }
 
 func (b *BaseOperatorBuilder) AddYaml(yaml string) OperatorSetupBuilder {
-	if (b.canEdit) {
+	if !b.finalized {
 		b.yamls = append(b.yamls, yaml)
 		return b
 	} else {
@@ -112,7 +106,7 @@ func (b *BaseOperatorBuilder) AddYaml(yaml string) OperatorSetupBuilder {
 }
 
 func (b *BaseOperatorBuilder) WithOperatorName(name string) OperatorSetupBuilder {
-	if (b.canEdit) {
+	if !b.finalized {
 		b.operatorName = name
 		return b
 	} else {
@@ -121,7 +115,7 @@ func (b *BaseOperatorBuilder) WithOperatorName(name string) OperatorSetupBuilder
 }
 
 func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) OperatorSetupBuilder {
-	if (b.canEdit) {
+	if !b.finalized {
 		b.keepCdrs = keepCdrs
 		return b
 	} else {
@@ -130,7 +124,7 @@ func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) OperatorSetupBuilder {
 }
 
 func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) OperatorSetupBuilder {
-	if (b.canEdit) {
+	if !b.finalized {
 		b.apiVersion = apiVersion
 		return b
 	} else {
@@ -139,7 +133,7 @@ func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) OperatorSetupBui
 }
 
 func (b *BaseOperatorBuilder) Finalize() *BaseOperatorBuilder {
-	b.canEdit = false
+	b.finalized = true
 	return b
 }
 
