@@ -29,9 +29,11 @@ type BaseOperatorBuilder struct {
 	operatorName string
 	keepCdrs     bool
 	apiVersion   string
-	canEdit      bool
+	finalized    bool
 }
+
 type BaseOperator struct {
+	restConfig        *rest.Config
 	kubeClient        *clientset.Clientset
 	extClient         *apiextension.Clientset
 	namespace         string
@@ -45,7 +47,9 @@ type BaseOperator struct {
 	deploymentConfig  appsv1.Deployment
 	serviceAccount    corev1.ServiceAccount
 	role              rbacv1.Role
+	cRole             rbacv1.ClusterRole
 	roleBinding       rbacv1.RoleBinding
+	cRoleBinding      rbacv1.ClusterRoleBinding
 	crds              []apiextv1b1.CustomResourceDefinition
 	keepCRD           bool
 }
@@ -57,19 +61,13 @@ type DefinitionStruct struct {
 	Spec       interface{} `json:"spec"`
 }
 
-func NewBuilder(restConfig *rest.Config) *BaseOperatorBuilder {
-	b := &BaseOperatorBuilder{}
+func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config) OperatorSetupBuilder {
 	b.restConfig = restConfig
-	b.canEdit = true
 	return b
 }
 
-func (b *BaseOperatorBuilder) OperatorType() OperatorType {
-	return OperatorTypeBase
-}
-
-func (b *BaseOperatorBuilder) WithNamespace(namespace string) *BaseOperatorBuilder {
-	if (b.canEdit) {
+func (b *BaseOperatorBuilder) WithNamespace(namespace string) OperatorSetupBuilder {
+	if !b.finalized {
 		b.namespace = namespace
 		return b
 	} else {
@@ -77,8 +75,13 @@ func (b *BaseOperatorBuilder) WithNamespace(namespace string) *BaseOperatorBuild
 	}
 }
 
-func (b *BaseOperatorBuilder) WithImage(image string) *BaseOperatorBuilder {
-	if (b.canEdit) {
+func (b *BaseOperatorBuilder) OperatorType() OperatorType {
+	// Delegate to concrete implementations
+	panic("implement me")
+}
+
+func (b *BaseOperatorBuilder) WithImage(image string) OperatorSetupBuilder {
+	if !b.finalized {
 		b.image = image
 		return b
 	} else {
@@ -86,8 +89,8 @@ func (b *BaseOperatorBuilder) WithImage(image string) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) WithYamls(yamls []string) *BaseOperatorBuilder {
-	if (b.canEdit) {
+func (b *BaseOperatorBuilder) WithYamls(yamls []string) OperatorSetupBuilder {
+	if !b.finalized {
 		b.yamls = yamls
 		return b
 	} else {
@@ -95,8 +98,8 @@ func (b *BaseOperatorBuilder) WithYamls(yamls []string) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) AddYaml(yaml string) *BaseOperatorBuilder {
-	if (b.canEdit) {
+func (b *BaseOperatorBuilder) AddYaml(yaml string) OperatorSetupBuilder {
+	if !b.finalized {
 		b.yamls = append(b.yamls, yaml)
 		return b
 	} else {
@@ -104,8 +107,8 @@ func (b *BaseOperatorBuilder) AddYaml(yaml string) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) WithOperatorName(name string) *BaseOperatorBuilder {
-	if (b.canEdit) {
+func (b *BaseOperatorBuilder) WithOperatorName(name string) OperatorSetupBuilder {
+	if !b.finalized {
 		b.operatorName = name
 		return b
 	} else {
@@ -113,8 +116,8 @@ func (b *BaseOperatorBuilder) WithOperatorName(name string) *BaseOperatorBuilder
 	}
 }
 
-func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) *BaseOperatorBuilder {
-	if (b.canEdit) {
+func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) OperatorSetupBuilder {
+	if !b.finalized {
 		b.keepCdrs = keepCdrs
 		return b
 	} else {
@@ -122,8 +125,8 @@ func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) *BaseOperatorBuilder {
 	}
 }
 
-func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) *BaseOperatorBuilder {
-	if (b.canEdit) {
+func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) OperatorSetupBuilder {
+	if !b.finalized {
 		b.apiVersion = apiVersion
 		return b
 	} else {
@@ -132,7 +135,7 @@ func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) *BaseOperatorBui
 }
 
 func (b *BaseOperatorBuilder) Finalize() *BaseOperatorBuilder {
-	b.canEdit = false
+	b.finalized = true
 	return b
 }
 
@@ -158,6 +161,31 @@ func (b *BaseOperatorBuilder) Build() (OperatorAccessor, error) {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
 	}
 	return baseOperator, nil
+}
+
+func (b *BaseOperator) InitFromBaseOperatorBuilder(builder *BaseOperatorBuilder) error {
+	b.restConfig = builder.restConfig
+	b.image = builder.image
+	b.namespace = builder.namespace
+	b.apiVersion = builder.apiVersion
+	b.operatorName = builder.operatorName
+	b.yamls = builder.yamls
+	b.keepCRD = builder.keepCdrs
+
+	// Initialize clients
+	if kubeClient, err := clientset.NewForConfig(b.restConfig); err != nil {
+		return err
+	} else {
+		b.kubeClient = kubeClient
+	}
+
+	if extClient, err := apiextension.NewForConfig(b.restConfig); err != nil {
+		return err
+	} else {
+		b.extClient = extClient
+	}
+
+	return nil
 }
 
 func (b *BaseOperator) loadJson(url string) ([]byte, error) {
@@ -194,7 +222,7 @@ func (b *BaseOperator) errorItemCreate(failedType string, parentError error) {
 }
 
 func (b *BaseOperator) setupServiceAccount(jsonObj []byte) {
-	log.Logf("setting up service account")
+	log.Logf("setting up service account (ns: %s)", b.namespace)
 	if err := json.Unmarshal(jsonObj, &b.serviceAccount); err != nil {
 		b.errorItemLoad("service account", jsonObj, err)
 	}
@@ -215,6 +243,17 @@ func (b *BaseOperator) setupRole(jsonObj []byte) {
 	}
 }
 
+func (b *BaseOperator) setupClusterRole(jsonObj []byte) {
+	if err := json.Unmarshal(jsonObj, &b.cRole); err != nil {
+		b.errorItemLoad("cluster role", jsonObj, err)
+	}
+
+	// Ignore errors if cluster level resource already exists
+	if _, err := b.kubeClient.RbacV1().ClusterRoles().Create(&b.cRole); err != nil {
+		b.errorItemCreate("cluster role", err)
+	}
+}
+
 func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 	log.Logf("Setting up Role Binding")
 	if err := json.Unmarshal(jsonObj, &b.roleBinding); err != nil {
@@ -222,6 +261,16 @@ func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 	}
 	if _, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(&b.roleBinding); err != nil {
 		b.errorItemCreate("role binding", err)
+	}
+}
+
+func (b *BaseOperator) setupClusterRoleBinding(jsonObj []byte) {
+	log.Logf("Setting up Cluster Role Binding")
+	if err := json.Unmarshal(jsonObj, &b.cRoleBinding); err != nil {
+		b.errorItemLoad("cluster role binding", jsonObj, err)
+	}
+	if _, err := b.kubeClient.RbacV1().ClusterRoleBindings().Create(&b.cRoleBinding); err != nil {
+		b.errorItemCreate("cluster role binding", err)
 	}
 }
 
@@ -254,18 +303,16 @@ func (b *BaseOperator) SetupYamls() error {
 			b.setupServiceAccount(jsonItem)
 		case "Role":
 			b.setupRole(jsonItem)
+		case "ClusterRole":
+			b.setupClusterRole(jsonItem)
 		case "RoleBinding":
 			b.setupRoleBinding(jsonItem)
+		case "ClusterRoleBinding":
+			b.setupClusterRoleBinding(jsonItem)
 		case "CustomResourceDefinition":
 			b.setupCRD(jsonItem)
 		case "Deployment":
-			if err = json.Unmarshal(jsonItem, &b.deploymentConfig); err != nil {
-				b.errorItemLoad("deployment", jsonItem, err)
-			}
-			if b.image!="" {
-				//Customize the spec if that is requested
-				b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
-			}
+			b.setupDeployment(jsonItem)
 		default:
 			log.Logf("can't find item type %s", def.Kind)
 		}
@@ -273,13 +320,18 @@ func (b *BaseOperator) SetupYamls() error {
 	return nil
 }
 
-func (b *BaseOperator) setupDeployment() error {
+func (b *BaseOperator) setupDeployment(jsonItem []byte) {
+	log.Logf("Setting up Deployment")
+	if err := json.Unmarshal(jsonItem, &b.deploymentConfig); err != nil {
+		b.errorItemLoad("deployment", jsonItem, err)
+	}
+	if b.image != "" {
+		//Customize the spec if that is requested
+		b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
+	}
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
-	// Should only have single container in deployment yaml.
-	b.image = b.deploymentConfig.Spec.Template.Spec.Containers[0].Image
-	return nil
 }
 
 func (b *BaseOperator) Namespace() string {
@@ -313,10 +365,6 @@ func (b *BaseOperator) APIVersion() string {
 func (b *BaseOperator) Setup() error {
 	log.Logf("setting up yamls: %v", b.yamls)
 	if err := b.SetupYamls(); err != nil {
-		return err
-	}
-	log.Logf("yamls setup complete, setting up deployment")
-	if err := b.setupDeployment(); err != nil {
 		return err
 	}
 	return nil

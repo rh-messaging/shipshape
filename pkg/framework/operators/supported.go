@@ -4,12 +4,15 @@ type OperatorType int
 
 const (
 	OperatorTypeQdr OperatorType = iota
-	OperatorTypeBase OperatorType = iota
 )
 
 var (
 	SupportedOperators = map[OperatorType]OperatorSetupBuilder{
-		OperatorTypeQdr: &QdrOperatorBuilder{},
-		OperatorTypeBase: &BaseOperatorBuilder{},
+		OperatorTypeQdr: &QdrOperatorBuilder{BaseOperatorBuilder{
+			image:        "quay.io/interconnectedcloud/qdr-operator",
+			operatorName: "qdr-operator",
+			keepCdrs:     true,
+			apiVersion:   "v1alpha1",
+		}},
 	}
 )
