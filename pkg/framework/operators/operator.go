@@ -11,11 +11,11 @@ type OperatorSetupBuilder interface {
 	WithOperatorName(name string) OperatorSetupBuilder
 	KeepCdr(keepCdrs bool) OperatorSetupBuilder
 	WithApiVersion(apiVersion string) OperatorSetupBuilder
-	Build() (OperatorAccessor, error)
+	Build() (OperatorSetup, error)
 	OperatorType() OperatorType
 }
 
-type OperatorAccessor interface {
+type OperatorSetup interface {
 	Interface() interface{}
 	Namespace() string
 	Image() string

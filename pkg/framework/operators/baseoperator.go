@@ -139,7 +139,7 @@ func (b *BaseOperatorBuilder) Finalize() *BaseOperatorBuilder {
 	return b
 }
 
-func (b *BaseOperatorBuilder) Build() (OperatorAccessor, error) {
+func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator := &BaseOperator{}
 	if kubeClient, err := clientset.NewForConfig(b.restConfig); err != nil {
 		return nil, err

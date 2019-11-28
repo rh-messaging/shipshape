@@ -14,7 +14,7 @@ type QdrOperatorBuilder struct{
 	BaseOperatorBuilder
 }
 
-func (q *QdrOperatorBuilder) Build() (OperatorAccessor, error) {
+func (q *QdrOperatorBuilder) Build() (OperatorSetup, error) {
 	qdr := &QdrOperator{}
 	if err := qdr.InitFromBaseOperatorBuilder(&q.BaseOperatorBuilder); err != nil {
 		return qdr, err
