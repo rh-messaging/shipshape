@@ -1,11 +1,18 @@
 package operators
 
-import (
-	restclient "k8s.io/client-go/rest"
-)
+import "k8s.io/client-go/rest"
 
 type OperatorSetupBuilder interface {
-	NewForConfig(namespace string, restConfig *restclient.Config) (OperatorSetup, error)
+	NewBuilder(restConfig *rest.Config) OperatorSetupBuilder
+	WithNamespace(namespace string) OperatorSetupBuilder
+	WithImage(image string) OperatorSetupBuilder
+	WithYamls(yamls []string) OperatorSetupBuilder
+	AddYaml(yaml string) OperatorSetupBuilder
+	WithOperatorName(name string) OperatorSetupBuilder
+	KeepCdr(keepCdrs bool) OperatorSetupBuilder
+	WithApiVersion(apiVersion string) OperatorSetupBuilder
+	Build() (OperatorSetup, error)
+	OperatorType() OperatorType
 }
 
 type OperatorSetup interface {

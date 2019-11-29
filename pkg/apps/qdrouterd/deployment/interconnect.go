@@ -53,7 +53,7 @@ func CreateInterconnect(c framework.ContextData, size int32, fn ...InterconnectC
 		Spec: v1alpha1.InterconnectSpec{
 			DeploymentPlan: v1alpha1.DeploymentPlanType{
 				Size:      size,
-				Image:     operator.Image(),
+				Image:     "quay.io/interconnectedcloud/qdrouterd",
 				Role:      "interior",
 				Placement: "Any",
 			},
