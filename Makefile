@@ -1,9 +1,5 @@
 .PHONY: all
-all: dep build
-
-.PHONY: dep
-dep:
-	dep ensure -v
+all: build
 
 .PHONY: format
 format:

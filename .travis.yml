@@ -18,29 +18,24 @@ env:
   global:
     - KUBECONFIG=$HOME/.kube/config
     - KUBERNETES_VERSION=$(curl -k -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+    - GO111MODULE=on
 
 before_install:
-  # Install Go Dep
-  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-
   # Setup kubectl
   - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
   - chmod +x kubectl
   - sudo mv kubectl /usr/local/bin/
 
   # Get tools
-  - go get sigs.k8s.io/kind
+  - export GO111MODULE=off; go get sigs.k8s.io/kind
 
   # Create a new Kubernetes cluster using KinD
   - kind create cluster
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
   - kubectl cluster-info
 
-  # Setup
-  - cd $GOPATH/src/github.com/rh-messaging/shipshape
-  - dep ensure -v && dep status
-
 script:
+  - export GO111MODULE=on
   - cd $GOPATH/src/github.com/rh-messaging/shipshape
   - make
   - make cluster-test
