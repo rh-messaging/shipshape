@@ -107,13 +107,23 @@ func (a *AmqpClientCommon) Result() amqp.ResultData {
 	// Unmarshalling message dict
 	var messages []MessageDict
 
-	// Iterate through lines
-	for {
-		line, _, err := reader.ReadLine()
-		if err == io.EOF {
-			break
+	// Iterate through lines\
+	var eof bool
+	for !eof {
+		var line, partLine []byte
+		var fullLine bool
+
+		// ReadLine may not return the full line when it exceeds 4096 bytes,
+		// so we need to keep reading till fullLine is true or eof is found
+		for !fullLine {
+			partLine, fullLine, err = reader.ReadLine()
+			line = append(line, partLine...)
+			if err == io.EOF {
+				eof = true
+				break
+			}
+			gomega.Expect(err).To(gomega.BeNil())
 		}
-		gomega.Expect(err).To(gomega.BeNil())
 
 		var msg MessageDict
 		err = json.Unmarshal([]byte(line), &msg)
