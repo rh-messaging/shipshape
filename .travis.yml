@@ -18,10 +18,10 @@ env:
   global:
     - KUBECONFIG=$HOME/.kube/config
     - KUBERNETES_VERSION=$(curl -k -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+    - GO111MODULE=on
 
 before_install:
   # Setup kubectl
-  - unset GO111MODULE
   - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
   - chmod +x kubectl
   - sudo mv kubectl /usr/local/bin/
