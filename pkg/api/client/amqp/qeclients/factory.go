@@ -1,7 +1,7 @@
 package qeclients
 
 import (
-	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
+	"fmt"
 	"github.com/rh-messaging/shipshape/pkg/framework"
 )
 
@@ -9,62 +9,42 @@ import (
 type AmqpQEClientImpl int
 
 const (
-	Python  AmqpQEClientImpl = iota
-	Timeout int              = 60
+	Python AmqpQEClientImpl = iota
+	Java
+	NodeJS
+	Timeout int = 60
 )
 
-// NewAmqpSender Builds a very basic Amqp Sender client using one of the
-// available QE Clients.
-// Message body will be truncated if it exceeds 256 bytes.
-// TODO If Message content (body) is large, create a secret and mount it within the client Pod
-//      Probably something to be done at the "topology setup".
-func NewAmqpSender(impl AmqpQEClientImpl, name string, ctx framework.ContextData, url string, count int, body string) (amqp.Client, error) {
-	// Generic Sender Builder
-	var senderBuilder amqp.SenderBuider
-	senderBuilder = NewSenderBuilder(impl)
-
-	// Prepare the new basic sender
-	senderBuilder.New(name, ctx, url)
-
-	// Truncating message body in case it exceeds 256 bytes
-	maxLength := 256
-	if len(body) < maxLength {
-		maxLength = len(body)
-	}
-
-	return senderBuilder.Timeout(Timeout).Messages(count).MessageContent(body[:maxLength]).Build()
+type AmqpQEClientImplInfo struct {
+	Name            string
+	Image           string
+	CommandSender   string
+	CommandReceiver string
 }
 
-func NewSenderBuilder(impl AmqpQEClientImpl) amqp.SenderBuider {
-	var senderBuilder amqp.SenderBuider
-	switch impl {
-	case Python:
-		fallthrough
-	default:
-		senderBuilder = new(AmqpPythonSenderBuilder)
+var (
+	QEClientImageMap = map[AmqpQEClientImpl]AmqpQEClientImplInfo{
+		Python: {
+			Name:    "cli-proton-python",
+			Image:   "docker.io/rhmessagingqe/cli-proton-python:latest",
+			CommandSender: "cli-proton-python-sender",
+			CommandReceiver: "cli-proton-python-receiver",
+		},
 	}
-	return senderBuilder
-}
+)
 
-// NewAmqpReceiver Builds a very basic Amqp Receiver client using one of the
-// available QE clients.
-func NewAmqpReceiver(impl AmqpQEClientImpl, name string, ctx framework.ContextData, url string, count int) (amqp.Client, error) {
-	// Generic Sender Builder
-	var receiverBuilder amqp.ReceiverBuilder
-	receiverBuilder = NewReceiverBuilder(impl)
+func sampleClient() {
 
-	// Prepare the new basic sender
-	receiverBuilder.New(name, ctx, url)
-	return receiverBuilder.Timeout(Timeout).Messages(count).Build()
-}
+	ctx := framework.ContextData{}
 
-func NewReceiverBuilder(impl AmqpQEClientImpl) amqp.ReceiverBuilder {
-	var receiverBuilder amqp.ReceiverBuilder
-	switch impl {
-	case Python:
-		fallthrough
-	default:
-		receiverBuilder = new(AmqpPythonReceiverBuilder)
-	}
-	return receiverBuilder
+	// Prepare my python sender
+	sb := NewSenderBuilder("sender-python-1", Python, ctx, "amqp://my.sample.url:5672/myAddress")
+	sb.MessageContentFromFile("messaging-files", "large-messages.txt")
+	sb.Messages(100)
+	sender, _ := sb.Build()
+	err := sender.Deploy()
+
+	fmt.Print(err)
+
+
 }
