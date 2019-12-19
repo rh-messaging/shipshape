@@ -2,7 +2,7 @@ package qdrmanagement
 
 import (
 	"encoding/json"
-	entities2 "github.com/rh-messaging/shipshape/pkg/apps/qdrouterd/qdrmanagement/entities"
+	entities "github.com/rh-messaging/shipshape/pkg/apps/qdrouterd/qdrmanagement/entities"
 	"github.com/rh-messaging/shipshape/pkg/framework"
 	"reflect"
 	"time"
@@ -18,7 +18,7 @@ var (
 
 // QdmanageQuery executes a "qdmanager query" command on the provided pod, returning
 // a slice of entities of the provided "entity" type.
-func QdmanageQuery(c framework.ContextData, pod string, entity entities2.Entity, fn func(entities2.Entity) bool) ([]entities2.Entity, error) {
+func QdmanageQuery(c framework.ContextData, pod string, entity entities.Entity, fn func(entities.Entity) bool) ([]entities.Entity, error) {
 	// Preparing command to execute
 	command := append(queryCommand, entity.GetEntityId())
 	kubeExec := framework.NewKubectlExecCommand(c, pod, timeout, command...)
@@ -42,9 +42,9 @@ func QdmanageQuery(c framework.ContextData, pod string, entity entities2.Entity,
 	}
 
 	// Adding each parsed concrete Entity to the parsedEntities
-	parsedEntities := []entities2.Entity{}
+	parsedEntities := []entities.Entity{}
 	for i := 0; i < nv.Elem().Len(); i++ {
-		candidate := nv.Elem().Index(i).Interface().(entities2.Entity)
+		candidate := nv.Elem().Index(i).Interface().(entities.Entity)
 
 		// If no filter function provided, just add
 		if fn == nil {
@@ -59,4 +59,24 @@ func QdmanageQuery(c framework.ContextData, pod string, entity entities2.Entity,
 	}
 
 	return parsedEntities, err
+}
+
+// QdmanageQueryWithRetries calls QdmanageQuery based on given delay and timeout, till the
+// done function returns true (or if done function is nil).
+func QdmanageQueryWithRetries(c framework.ContextData, pod string, entity entities.Entity,
+	delaySecs int, timeoutSecs int, filter func(entities.Entity) bool,
+	done func(es []entities.Entity, err error) bool) (es []entities.Entity, err error) {
+
+	// Wait timeout
+	timeout := time.Duration(timeoutSecs) * time.Second
+
+	// Channel to notify result or timeout
+	for t := time.Now(); time.Since(t) < timeout; time.Sleep(time.Duration(delaySecs) * time.Second) {
+		es, err = QdmanageQuery(c, pod, entity, filter)
+		if done == nil || done(es, err) {
+			return
+		}
+	}
+
+	return
 }

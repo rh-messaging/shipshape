@@ -43,6 +43,7 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEReceiver, error) {
 	// Preparing Pod, Container (commands and args) and etc
 	podBuilder := framework.NewPodBuilder(a.receiver.Name, a.receiver.Context.Namespace)
 	podBuilder.AddLabel("amqp-client-impl", QEClientImageMap[a.receiver.Implementation].Name)
+	podBuilder.RestartPolicy("Never")
 
 	//
 	// Helps building the container for sender pod

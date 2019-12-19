@@ -61,6 +61,7 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQESender, error) {
 	// Preparing Pod, Container (commands and args), Volumes and etc
 	podBuilder := framework.NewPodBuilder(a.sender.Name, a.sender.Context.Namespace)
 	podBuilder.AddLabel("amqp-client-impl", QEClientImageMap[a.sender.Implementation].Name)
+	podBuilder.RestartPolicy("Never")
 
 	// Adding VolumeSource for provided configMap
 	if a.contentConfigMap != "" {
