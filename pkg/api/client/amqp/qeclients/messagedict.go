@@ -6,10 +6,11 @@ import (
 
 // MessageDict represents a message logged by cli-proton-python as a dictionary
 type MessageDict struct {
+	AbsExpTime      int               `json:"absolute_expiry_time"`
 	Address         string            `json:"address"`
 	Annotations     string            `json:"annotations"`
-	Content         string            `json:"Content"`
-	ContentEncoding string            `json:"content_enconding"`
+	Content         string            `json:"content"`
+	ContentEncoding string            `json:"content_encoding"`
 	ContentType     string            `json:"content_type"`
 	CorrelationId   string            `json:"correlation_id"`
 	CreationTime    float32           `json:"creation_time"`

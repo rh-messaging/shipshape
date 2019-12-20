@@ -1,10 +1,5 @@
 package qeclients
 
-import (
-	"fmt"
-	"github.com/rh-messaging/shipshape/pkg/framework"
-)
-
 // AmqpQEClientImpl specifies the available Amqp QE Clients
 type AmqpQEClientImpl int
 
@@ -32,19 +27,3 @@ var (
 		},
 	}
 )
-
-func sampleClient() {
-
-	ctx := framework.ContextData{}
-
-	// Prepare my python sender
-	sb := NewSenderBuilder("sender-python-1", Python, ctx, "amqp://my.sample.url:5672/myAddress")
-	sb.MessageContentFromFile("messaging-files", "large-messages.txt")
-	sb.Messages(100)
-	sender, _ := sb.Build()
-	err := sender.Deploy()
-
-	fmt.Print(err)
-
-
-}
