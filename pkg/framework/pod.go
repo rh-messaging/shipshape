@@ -31,6 +31,7 @@ func NewContainerBuilder(name string, image string) *ContainerBuilder {
 	cb.c = v1.Container{}
 	cb.c.Name = name
 	cb.c.Image = image
+	cb.c.TerminationMessagePolicy = v1.TerminationMessageFallbackToLogsOnError
 	return cb
 }
 
