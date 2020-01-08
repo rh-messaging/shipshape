@@ -5,6 +5,7 @@ import (
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	brokerclientset "github.com/rh-messaging/activemq-artemis-operator/pkg/client/clientset/versioned"
 )
 
 // Reusing BaseOperatorBuilder implementation and adding
@@ -17,6 +18,12 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 	broker := &BrokerOperator{}
 	if err := broker.InitFromBaseOperatorBuilder(&b.BaseOperatorBuilder); err != nil {
 		return broker, err
+	}
+
+	if brokerclient, err := brokerclientset.NewForConfig(b.restConfig); err!= nil {
+		return broker, err
+	} else {
+		broker.brokerClient = brokerclient
 	}
 
 	// Setting up the defaults
@@ -42,6 +49,7 @@ func (b *BrokerOperatorBuilder) OperatorType() OperatorType {
 
 type BrokerOperator struct {
 	BaseOperator
+	brokerClient brokerclientset.Interface
 }
 
 func (b *BrokerOperator) Namespace() string {
@@ -130,6 +138,5 @@ func (b *BrokerOperator) Name() string {
 }
 
 func (b *BrokerOperator) Interface() interface{} {
-	//Broker operator doesn't provide any kind of additional interface for now
-	return nil
+	return b.brokerClient
 }

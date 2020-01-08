@@ -53,6 +53,30 @@ func (c *ContextData) ListPodsForDeployment(deployment *appsv1.Deployment) (*cor
 	return c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(listOps)
 }
 
+func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		ds, err := kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Logf("Waiting for availability of %s stateful set", name)
+				return false, nil
+			}
+			return false, err
+		}
+
+		if int(ds.Status.ReadyReplicas) >= count {
+			return true, nil
+		}
+		log.Logf("Waiting for full availability of %s stateful set (%d/%d)", name, ds.Status.ReadyReplicas, count)
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	log.Logf("Statefulset ready (%d)", count)
+	return nil
+}
+
 func WaitForDeployment(kubeclient kubernetes.Interface, namespace, name string, replicas int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})

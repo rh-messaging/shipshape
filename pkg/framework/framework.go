@@ -41,6 +41,7 @@ var (
 	Timeout              = time.Second * 600
 	CleanupRetryInterval = time.Second * 1
 	CleanupTimeout       = time.Second * 5
+	MessagingClientsImage = "quay.io/enmasse/systemtests-clients:latest"
 )
 
 type ClientSet struct {

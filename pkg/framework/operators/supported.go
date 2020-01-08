@@ -17,7 +17,7 @@ var (
 		}},
 		OperatorTypeBroker: &BrokerOperatorBuilder {BaseOperatorBuilder{
 			image: "brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/amq7/amq-broker-operator:0.9",
-			operatorName: "broker-operator",
+			operatorName: "activemq-artemis-operator",
 			keepCdrs: true,
 			apiVersion: "v1alpha1",
 		}},
