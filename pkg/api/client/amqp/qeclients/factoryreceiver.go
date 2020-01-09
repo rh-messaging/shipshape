@@ -8,23 +8,22 @@ import (
 )
 
 type AmqpQEReceiverBuilder struct {
-	receiver         *AmqpQEReceiver
+	receiver         *AmqpQEClientCommon
+	MessageCount     int
 }
 
 func NewReceiverBuilder(name string, impl AmqpQEClientImpl, data framework.ContextData, url string) *AmqpQEReceiverBuilder {
 	rb := new(AmqpQEReceiverBuilder)
-	rb.receiver = &AmqpQEReceiver{
-		AmqpQEClientCommon: AmqpQEClientCommon{
-			AmqpClientCommon: amqp.AmqpClientCommon{
-				Context: data,
-				Name:    name,
-				Url:     url,
-				Timeout: Timeout,
-				Params:  []amqp.Param{},
-				Mutex:   sync.Mutex{},
-			},
-			Implementation: impl,
+	rb.receiver = &AmqpQEClientCommon{
+		AmqpClientCommon: amqp.AmqpClientCommon{
+			Context: data,
+			Name:    name,
+			Url:     url,
+			Timeout: Timeout,
+			Params:  []amqp.Param{},
+			Mutex:   sync.Mutex{},
 		},
+		Implementation: impl,
 	}
 	return rb
 }
@@ -35,11 +34,11 @@ func (a *AmqpQEReceiverBuilder) Timeout(timeout int) *AmqpQEReceiverBuilder {
 }
 
 func (a *AmqpQEReceiverBuilder) Messages(count int) *AmqpQEReceiverBuilder {
-	a.receiver.MessageCount = count
+	a.MessageCount = count
 	return a
 }
 
-func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEReceiver, error) {
+func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args) and etc
 	podBuilder := framework.NewPodBuilder(a.receiver.Name, a.receiver.Context.Namespace)
 	podBuilder.AddLabel("amqp-client-impl", QEClientImageMap[a.receiver.Implementation].Name)
@@ -59,7 +58,7 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEReceiver, error) {
 	cBuilder.AddArgs("--broker-url", a.receiver.Url)
 
 	// Message count
-	cBuilder.AddArgs("--count", strconv.Itoa(a.receiver.MessageCount))
+	cBuilder.AddArgs("--count", strconv.Itoa(a.MessageCount))
 
 	// Timeout
 	cBuilder.AddArgs("--timeout", strconv.Itoa(a.receiver.Timeout))

@@ -13,17 +13,6 @@ import (
 type AmqpQEClientCommon struct {
 	amqp.AmqpClientCommon
 	Implementation AmqpQEClientImpl
-	MessageCount   int
-}
-
-type AmqpQESender struct {
-	AmqpQEClientCommon
-	MessageContent         string
-	MessageContentFromFile string
-}
-
-type AmqpQEReceiver struct {
-	AmqpQEClientCommon
 }
 
 // Result common implementation for QE Clients

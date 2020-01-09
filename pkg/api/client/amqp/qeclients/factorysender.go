@@ -12,24 +12,25 @@ const (
 )
 
 type AmqpQESenderBuilder struct {
-	sender           *AmqpQESender
-	contentConfigMap string
+	sender                    *AmqpQEClientCommon
+	ContentConfigMap          string
+	MessageCount              int
+	MessageContent            string
+	MessageContentFromFileKey string
 }
 
 func NewSenderBuilder(name string, impl AmqpQEClientImpl, data framework.ContextData, url string) *AmqpQESenderBuilder {
 	sb := new(AmqpQESenderBuilder)
-	sb.sender = &AmqpQESender{
-		AmqpQEClientCommon: AmqpQEClientCommon{
-			AmqpClientCommon: amqp.AmqpClientCommon{
-				Context: data,
-				Name:    name,
-				Url:     url,
-				Timeout: Timeout,
-				Params:  []amqp.Param{},
-				Mutex:   sync.Mutex{},
-			},
-			Implementation: impl,
+	sb.sender = &AmqpQEClientCommon{
+		AmqpClientCommon: amqp.AmqpClientCommon{
+			Context: data,
+			Name:    name,
+			Url:     url,
+			Timeout: Timeout,
+			Params:  []amqp.Param{},
+			Mutex:   sync.Mutex{},
 		},
+		Implementation: impl,
 	}
 	return sb
 }
@@ -40,32 +41,32 @@ func (a *AmqpQESenderBuilder) Timeout(timeout int) *AmqpQESenderBuilder {
 }
 
 func (a *AmqpQESenderBuilder) Messages(count int) *AmqpQESenderBuilder {
-	a.sender.MessageCount = count
+	a.MessageCount = count
 	return a
 }
 
-func (a *AmqpQESenderBuilder) MessageContent(content string) *AmqpQESenderBuilder {
-	a.sender.MessageContent = content
+func (a *AmqpQESenderBuilder) Content(content string) *AmqpQESenderBuilder {
+	a.MessageContent = content
 	return a
 }
 
 // MessageContentFromFile uses the given config map name and just the filename reference,
 // inside your configmap Data (key for the file)
 func (a *AmqpQESenderBuilder) MessageContentFromFile(configMapName string, filenameKey string) *AmqpQESenderBuilder {
-	a.sender.MessageContentFromFile = filenameKey
-	a.contentConfigMap = configMapName
+	a.MessageContentFromFileKey = filenameKey
+	a.ContentConfigMap = configMapName
 	return a
 }
 
-func (a *AmqpQESenderBuilder) Build() (*AmqpQESender, error) {
+func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args), Volumes and etc
 	podBuilder := framework.NewPodBuilder(a.sender.Name, a.sender.Context.Namespace)
 	podBuilder.AddLabel("amqp-client-impl", QEClientImageMap[a.sender.Implementation].Name)
 	podBuilder.RestartPolicy("Never")
 
 	// Adding VolumeSource for provided configMap
-	if a.contentConfigMap != "" {
-		podBuilder.AddConfigMapVolumeSource(a.contentConfigMap, a.contentConfigMap)
+	if a.ContentConfigMap != "" {
+		podBuilder.AddConfigMapVolumeSource(a.ContentConfigMap, a.ContentConfigMap)
 	}
 
 	//
@@ -82,17 +83,17 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQESender, error) {
 	cBuilder.AddArgs("--broker-url", a.sender.Url)
 
 	// Message count
-	cBuilder.AddArgs("--count", strconv.Itoa(a.sender.MessageCount))
+	cBuilder.AddArgs("--count", strconv.Itoa(a.MessageCount))
 
 	// Timeout
 	cBuilder.AddArgs("--timeout", strconv.Itoa(a.sender.Timeout))
 
 	// Source for message content (file or arg)
-	if a.sender.MessageContentFromFile != "" {
-		cBuilder.AddVolumeMountConfigMapData(a.contentConfigMap, MountPath, true)
-		cBuilder.AddArgs("--msg-content-from-file", MountPath + "/" + a.sender.MessageContentFromFile)
+	if a.MessageContentFromFileKey != "" {
+		cBuilder.AddVolumeMountConfigMapData(a.ContentConfigMap, MountPath, true)
+		cBuilder.AddArgs("--msg-content-from-file", MountPath+"/"+a.MessageContentFromFileKey)
 	} else {
-		cBuilder.AddArgs("--msg-content", a.sender.MessageContent)
+		cBuilder.AddArgs("--msg-content", a.MessageContent)
 	}
 
 	// Static options
