@@ -27,6 +27,11 @@ before_install:
 
   # Get tools
   - env GO111MODULE=off go get sigs.k8s.io/kind
+  - env GO111MODULE=off go get github.com/jfeliu007/goplantuml/parser
+  - env GO111MODULE=off go get github.com/jfeliu007/goplantuml/cmd/goplantuml
+  - cd $GOPATH/src/github.com/jfeliu007/goplantuml
+  - env GO111MODULE=off go install ./...
+  - cd -
 
   # Create a new Kubernetes cluster using KinD
   - kind create cluster
@@ -34,6 +39,7 @@ before_install:
 
 script:
   - cd $GOPATH/src/github.com/rh-messaging/shipshape
+  - make uml
   - env GO111MODULE=on make
   - env GO111MODULE=on make cluster-test
 
