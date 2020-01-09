@@ -89,3 +89,19 @@ Here is an overview on what is being performed on each file used by the end-to-e
   - The teardown process of the created `Framework` instance is exected in the `AfterEach` execution  
 test/framework/framework_test.go
   - Validates that the supported operators have been deployed on the new namespace
+
+# Generating and viewing project UML
+
+- To generat UML you need to install goplantuml (outside of the go.mod path):
+
+```shell script
+$ go get github.com/jfeliu007/goplantuml/parser
+$ go get github.com/jfeliu007/goplantuml/cmd/goplantuml
+$ cd $GOPATH/src/github.com/jfeliu007/goplantuml
+$ go install ./...
+```
+
+- Once installed just doing `make uml` will generate some `*.puml` files in your current folder matching the go packages.
+- To visualize the resulting "PlantUML" files, one option is just to install
+  the "PlantUML Visualizer" plugin in your browser (for firefox:  https://addons.mozilla.org/es/firefox/addon/plantuml-visualizer/).
+- Then just open the files with your browser or do something like `$ firefox file://${PWD}/framework.puml`
