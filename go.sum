@@ -56,10 +56,10 @@ github.com/onsi/ginkgo v1.10.3/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+
 github.com/onsi/gomega v1.3.0/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v1.7.1 h1:K0jcRCwNQM3vFGh1ppMtDh/+7ApJrjldlX8fA0jDTLQ=
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
-github.com/openshift/api v3.9.0+incompatible h1:fJ/KsefYuZAjmrr3+5U9yZIZbTOpVkDDLDLFresAeYs=
-github.com/openshift/api v3.9.0+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
-github.com/openshift/client-go v3.9.0+incompatible h1:13k3Ok0B7TA2hA3bQW2aFqn6y04JaJWdk7ITTyg+Ek0=
-github.com/openshift/client-go v3.9.0+incompatible/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
+github.com/openshift/api v0.0.0-20190322043348-8741ff068a47 h1:PAlaAXvwmPxgh8gm0/eVmNMGLeJ1bURwyKvJVLnsr6s=
+github.com/openshift/api v0.0.0-20190322043348-8741ff068a47/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
+github.com/openshift/client-go v0.0.0-20180830153425-431ec9a26e50 h1:y59/+XbTbwzEdS2wveRQTZvjkar7sbVjTNnqFBufr74=
+github.com/openshift/client-go v0.0.0-20180830153425-431ec9a26e50/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
 github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca h1:dKRMHfduZ/ZqOHuYGk/0kkTIUbnyorkAfzLOp6Ts8pU=
 github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca/go.mod h1:VyrYX9gd7irzKovcSS6BIIEwPRkP2Wm2m9ufcdFSJ34=
 github.com/peterbourgon/diskv v2.0.1+incompatible h1:UBdAOUP5p4RWqPBg048CAvpKN+vxiaj6gdUUzhl4XmI=

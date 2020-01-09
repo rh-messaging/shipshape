@@ -18,8 +18,8 @@ require (
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
-	github.com/openshift/api v3.9.0+incompatible // indirect
-	github.com/openshift/client-go v3.9.0+incompatible
+	github.com/openshift/api v0.0.0-20190322043348-8741ff068a47 // indirect
+	github.com/openshift/client-go v0.0.0-20180830153425-431ec9a26e50
 	github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/spf13/pflag v1.0.1 // indirect

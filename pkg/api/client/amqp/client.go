@@ -1,14 +1,13 @@
 package amqp
 
 import (
-	"github.com/rh-messaging/shipshape/pkg/framework"
 	"time"
 )
 
 const (
-	TimeoutDefaultSecs   int           = 60
-	TimeoutInterruptSecs int           = 60
-	Poll                 time.Duration = time.Duration(2) * time.Second
+	TimeoutDefaultSecs   int = 60
+	TimeoutInterruptSecs int = 60
+	Poll                     = time.Duration(2) * time.Second
 )
 
 type Client interface {
@@ -18,25 +17,6 @@ type Client interface {
 	Interrupt()
 	Wait() ClientStatus
 	Result() ResultData
-}
-
-// SenderBuilder minimalist sample builder for AMQP Senders
-type SenderBuider interface {
-	New(name string, data framework.ContextData, url string) SenderBuider
-	Messages(count int) SenderBuider
-	Timeout(timeout int) SenderBuider
-	Param(name string, value string) SenderBuider
-	MessageContent(content string) SenderBuider
-	Build() (Client, error)
-}
-
-// ReceiverBuilder minimalist sample builder for AMQP Receivers
-type ReceiverBuilder interface {
-	New(name string, data framework.ContextData, url string) ReceiverBuilder
-	Messages(count int) ReceiverBuilder
-	Timeout(timeout int) ReceiverBuilder
-	Param(name string, value string) ReceiverBuilder
-	Build() (Client, error)
 }
 
 //
