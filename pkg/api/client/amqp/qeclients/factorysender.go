@@ -104,7 +104,10 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	}
 
 	// Static options
-	cBuilder.AddArgs("--log-msgs", "json", "--on-release", "retry")
+	cBuilder.AddArgs("--log-msgs", "json")
+	if a.sender.Implementation != Java {
+		cBuilder.AddArgs("--on-release", "retry")
+	}
 
 	// Retrieving container and adding to pod
 	c := cBuilder.Build()
