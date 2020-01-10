@@ -19,3 +19,7 @@ uml:
 	goplantuml -recursive pkg/api/client/ > client.puml
 	goplantuml -recursive pkg/apps/ > apps.puml
 	goplantuml -recursive pkg/framework/ > framework.puml
+
+.PHONY: unit-tests
+unit-tests:
+	go test -v "./pkg/..."

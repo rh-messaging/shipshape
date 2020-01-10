@@ -41,5 +41,6 @@ script:
   - cd $GOPATH/src/github.com/rh-messaging/shipshape
   - make uml
   - env GO111MODULE=on make
+  - env GO111MODULE=on make unit-tests
   - env GO111MODULE=on make cluster-test
 
