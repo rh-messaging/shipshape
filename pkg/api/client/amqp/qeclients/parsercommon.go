@@ -13,10 +13,10 @@ import (
 // and returns arguments list based on the implementation being used
 func parseUrl(client *AmqpQEClientCommon) []string {
 	switch client.Implementation {
-	case Java:
-		return java.Url(client.Url)
-	default:
+	case Python:
 		return []string{"--broker-url", client.Url}
+	default:
+		return java.Url(client.Url)
 	}
 }
 
