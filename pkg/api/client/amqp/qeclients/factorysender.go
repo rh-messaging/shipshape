@@ -3,7 +3,6 @@ package qeclients
 import (
 	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
 	"github.com/rh-messaging/shipshape/pkg/framework"
-	"strconv"
 	"sync"
 )
 
@@ -79,15 +78,23 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Adds args (may vary from one implementation to another)
 	//
 
+	//
+	// Common options first
+	//
+
 	// URL
-	cBuilder.AddArgs("--broker-url", a.sender.Url)
+	cBuilder.AddArgs(parseUrl(a.sender)...)
 
 	// Message count
-	cBuilder.AddArgs("--count", strconv.Itoa(a.MessageCount))
+	cBuilder.AddArgs(parseCount(a.MessageCount)...)
 
 	// Timeout
-	cBuilder.AddArgs("--timeout", strconv.Itoa(a.sender.Timeout))
+	cBuilder.AddArgs(parseTimeout(a.sender.Timeout)...)
 
+	//
+	// Sender specific options
+	//
+	
 	// Source for message content (file or arg)
 	if a.MessageContentFromFileKey != "" {
 		cBuilder.AddVolumeMountConfigMapData(a.ContentConfigMap, MountPath, true)

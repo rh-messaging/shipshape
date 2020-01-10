@@ -25,5 +25,17 @@ var (
 			CommandSender: "cli-proton-python-sender",
 			CommandReceiver: "cli-proton-python-receiver",
 		},
+		Java: {
+			Name:    "cli-qpid-java",
+			Image:   "docker.io/rhmessagingqe/cli-java:latest",
+			CommandSender: "cli-qpid-sender",
+			CommandReceiver: "cli-qpid-receiver",
+		},
+		NodeJS: {
+			Name:    "cli-rhea-nodejs",
+			Image:   "docker.io/rhmessagingqe/cli-rhea:centos7",
+			CommandSender: "cli-rhea-sender",
+			CommandReceiver: "cli-rhea-receiver",
+		},
 	}
 )

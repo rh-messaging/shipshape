@@ -3,7 +3,6 @@ package qeclients
 import (
 	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
 	"github.com/rh-messaging/shipshape/pkg/framework"
-	"strconv"
 	"sync"
 )
 
@@ -55,13 +54,14 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	//
 
 	// URL
-	cBuilder.AddArgs("--broker-url", a.receiver.Url)
+	// Parsing URL
+	cBuilder.AddArgs(parseUrl(a.receiver)...)
 
 	// Message count
-	cBuilder.AddArgs("--count", strconv.Itoa(a.MessageCount))
+	cBuilder.AddArgs(parseCount(a.MessageCount)...)
 
 	// Timeout
-	cBuilder.AddArgs("--timeout", strconv.Itoa(a.receiver.Timeout))
+	cBuilder.AddArgs(parseTimeout(a.receiver.Timeout)...)
 
 	// Static options
 	cBuilder.AddArgs("--log-msgs", "json")
