@@ -52,7 +52,7 @@ type BaseOperator struct {
 	cRoleBinding      rbacv1.ClusterRoleBinding
 	crds              []apiextv1b1.CustomResourceDefinition
 	keepCRD           bool
-	clientImageName   string
+	clientImageName	  string
 }
 
 type DefinitionStruct struct {
@@ -63,7 +63,6 @@ type DefinitionStruct struct {
 }
 
 const ClientImageName = "quay.io/enmasse/systemtests-clients:latest"
-
 
 func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config) OperatorSetupBuilder {
 	b.restConfig = restConfig
@@ -278,7 +277,6 @@ func (b *BaseOperator) setupClusterRoleBinding(jsonObj []byte) {
 	}
 }
 
-
 func (b *BaseOperator) setupCRD(jsonObj []byte) {
 	log.Logf("Setting up CRD")
 	var CRD apiextv1b1.CustomResourceDefinition
@@ -334,8 +332,6 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 		//Customize the spec if that is requested
 		b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
 	}
-
-	b.deploymentConfig.Spec.Template.Spec.Containers[0].Name = b.Name()
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
@@ -344,7 +340,7 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 func (b *BaseOperator) getClientImage() string {
     if (b.clientImageName!="") {
         return b.clientImageName
-    } else { 
+    } else {
         return ClientImageName
     }
 }

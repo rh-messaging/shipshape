@@ -1,9 +1,5 @@
 .PHONY: all
-all: dep build
-
-.PHONY: dep
-dep:
-	dep ensure -v
+all: build
 
 .PHONY: format
 format:
@@ -17,3 +13,13 @@ build:
 cluster-test:
 	go build ./test/...
 	go test --count=1 -v "./test/framework"
+
+.PHONY: uml
+uml:
+	goplantuml -recursive pkg/api/client/ > client.puml
+	goplantuml -recursive pkg/apps/ > apps.puml
+	goplantuml -recursive pkg/framework/ > framework.puml
+
+.PHONY: unit-tests
+unit-tests:
+	go test -v "./pkg/..."
