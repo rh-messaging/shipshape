@@ -66,6 +66,12 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Static options
 	cBuilder.AddArgs("--log-msgs", "json")
 
+	// Specific to cli-proton-python and cli-rhea
+	impl := a.receiver.Implementation
+	if impl == Python || impl == NodeJS {
+		cBuilder.AddArgs("--reactor-auto-accept")
+	}
+
 	// Retrieving container and adding to pod
 	c := cBuilder.Build()
 	podBuilder.AddContainer(c)
