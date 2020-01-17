@@ -7,12 +7,13 @@ import (
 )
 
 type AmqpQEReceiverBuilder struct {
+	*AmqpQEClientBuilderCommon
 	receiver         *AmqpQEClientCommon
-	MessageCount     int
 }
 
 func NewReceiverBuilder(name string, impl AmqpQEClientImpl, data framework.ContextData, url string) *AmqpQEReceiverBuilder {
 	rb := new(AmqpQEReceiverBuilder)
+	rb.AmqpQEClientBuilderCommon = &AmqpQEClientBuilderCommon{}
 	rb.receiver = &AmqpQEClientCommon{
 		AmqpClientCommon: amqp.AmqpClientCommon{
 			Context: data,
@@ -32,11 +33,6 @@ func (a *AmqpQEReceiverBuilder) Timeout(timeout int) *AmqpQEReceiverBuilder {
 	return a
 }
 
-func (a *AmqpQEReceiverBuilder) Messages(count int) *AmqpQEReceiverBuilder {
-	a.MessageCount = count
-	return a
-}
-
 func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args) and etc
 	podBuilder := framework.NewPodBuilder(a.receiver.Name, a.receiver.Context.Namespace)
@@ -46,7 +42,11 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	//
 	// Helps building the container for sender pod
 	//
-	cBuilder := framework.NewContainerBuilder(a.receiver.Name, QEClientImageMap[a.receiver.Implementation].Image)
+	image := QEClientImageMap[a.receiver.Implementation].Image
+	if a.customImage != "" {
+		image = a.customImage
+	}
+	cBuilder := framework.NewContainerBuilder(a.receiver.Name, image)
 	cBuilder.WithCommands(QEClientImageMap[a.receiver.Implementation].CommandReceiver)
 
 	//
@@ -68,7 +68,7 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 
 	// Specific to cli-proton-python and cli-rhea
 	impl := a.receiver.Implementation
-	if impl == Python || impl == NodeJS {
+	if impl == Python {
 		cBuilder.AddArgs("--reactor-auto-accept")
 	}
 

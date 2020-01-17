@@ -10,13 +10,6 @@ const (
 	Timeout int = 60
 )
 
-type AmqpQEClientImplInfo struct {
-	Name            string
-	Image           string
-	CommandSender   string
-	CommandReceiver string
-}
-
 var (
 	QEClientImageMap = map[AmqpQEClientImpl]AmqpQEClientImplInfo{
 		Python: {
@@ -39,3 +32,27 @@ var (
 		},
 	}
 )
+
+type AmqpQEClientImplInfo struct {
+	Name            string
+	Image           string
+	CommandSender   string
+	CommandReceiver string
+}
+
+// Common builder properties and methods to be reused by sender/receiver builders
+type AmqpQEClientBuilderCommon struct {
+	customImage      string
+
+	MessageCount     int
+}
+
+func (a *AmqpQEClientBuilderCommon) Messages(count int) *AmqpQEClientBuilderCommon {
+	a.MessageCount = count
+	return a
+}
+
+func (a *AmqpQEClientBuilderCommon) CustomImage(image string) *AmqpQEClientBuilderCommon {
+	a.customImage = image
+	return a
+}
