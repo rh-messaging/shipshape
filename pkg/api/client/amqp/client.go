@@ -43,6 +43,7 @@ type ResultData struct {
 	Messages  []Message
 	Delivered int
 	Released  int
+	Rejected  int
 	Modified  int
 }
 
