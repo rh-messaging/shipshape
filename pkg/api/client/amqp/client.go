@@ -45,6 +45,7 @@ type ResultData struct {
 	Released  int
 	Rejected  int
 	Modified  int
+	Accepted  int
 }
 
 type ClientStatus int
