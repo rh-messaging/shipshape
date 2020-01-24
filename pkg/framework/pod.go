@@ -112,7 +112,7 @@ func (cb *ContainerBuilder) AddArgs(args ...string) *ContainerBuilder {
 	return cb
 }
 
-// EnvVar appends a given list of environment variables into the container
+// EnvVar sets an environment variable into the container
 func (cb *ContainerBuilder) EnvVar(variable, value string) *ContainerBuilder {
 	if cb.c.Env == nil {
 		cb.c.Env = []v1.EnvVar{}
