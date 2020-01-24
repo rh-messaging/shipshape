@@ -38,7 +38,7 @@ type Link struct {
 
 // Implementation of the Entity interface
 func (Link) GetEntityId() string {
-	return "router.link"
+	return "link"
 }
 
 type LinkOperStatusType int
