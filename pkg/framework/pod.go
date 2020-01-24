@@ -112,6 +112,18 @@ func (cb *ContainerBuilder) AddArgs(args ...string) *ContainerBuilder {
 	return cb
 }
 
+// EnvVar sets an environment variable into the container
+func (cb *ContainerBuilder) EnvVar(variable, value string) *ContainerBuilder {
+	if cb.c.Env == nil {
+		cb.c.Env = []v1.EnvVar{}
+	}
+	cb.c.Env = append(cb.c.Env, v1.EnvVar{
+		Name:      variable,
+		Value:     value,
+	})
+	return cb
+}
+
 // ImagePullPolicy sets the ImagePullPolicy for the given container.
 // Default is PullAlways.
 func (cb *ContainerBuilder) ImagePullPolicy(policy string) *ContainerBuilder {

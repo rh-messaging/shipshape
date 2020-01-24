@@ -7,7 +7,7 @@ import (
 const (
 	TimeoutDefaultSecs   int = 60
 	TimeoutInterruptSecs int = 60
-	Poll                     = time.Duration(2) * time.Second
+	Poll                     = time.Duration(5) * time.Second
 )
 
 type Client interface {
@@ -43,7 +43,9 @@ type ResultData struct {
 	Messages  []Message
 	Delivered int
 	Released  int
+	Rejected  int
 	Modified  int
+	Accepted  int
 }
 
 type ClientStatus int

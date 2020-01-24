@@ -3,7 +3,6 @@ package qeclients
 import (
 	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
 	"github.com/rh-messaging/shipshape/pkg/framework"
-	"strconv"
 	"sync"
 )
 
@@ -12,15 +11,16 @@ const (
 )
 
 type AmqpQESenderBuilder struct {
+	*AmqpQEClientBuilderCommon
 	sender                    *AmqpQEClientCommon
 	ContentConfigMap          string
-	MessageCount              int
 	MessageContent            string
 	MessageContentFromFileKey string
 }
 
 func NewSenderBuilder(name string, impl AmqpQEClientImpl, data framework.ContextData, url string) *AmqpQESenderBuilder {
 	sb := new(AmqpQESenderBuilder)
+	sb.AmqpQEClientBuilderCommon = &AmqpQEClientBuilderCommon{}
 	sb.sender = &AmqpQEClientCommon{
 		AmqpClientCommon: amqp.AmqpClientCommon{
 			Context: data,
@@ -37,11 +37,6 @@ func NewSenderBuilder(name string, impl AmqpQEClientImpl, data framework.Context
 
 func (a *AmqpQESenderBuilder) Timeout(timeout int) *AmqpQESenderBuilder {
 	a.sender.Timeout = timeout
-	return a
-}
-
-func (a *AmqpQESenderBuilder) Messages(count int) *AmqpQESenderBuilder {
-	a.MessageCount = count
 	return a
 }
 
@@ -72,22 +67,37 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	//
 	// Helps building the container for sender pod
 	//
-	cBuilder := framework.NewContainerBuilder(a.sender.Name, QEClientImageMap[a.sender.Implementation].Image)
+	//
+	// Helps building the container for sender pod
+	//
+	image := QEClientImageMap[a.sender.Implementation].Image
+	if a.customImage != "" {
+		image = a.customImage
+	}
+	cBuilder := framework.NewContainerBuilder(a.sender.Name, image)
 	cBuilder.WithCommands(QEClientImageMap[a.sender.Implementation].CommandSender)
 
 	//
 	// Adds args (may vary from one implementation to another)
 	//
 
+	//
+	// Common options first
+	//
+
 	// URL
-	cBuilder.AddArgs("--broker-url", a.sender.Url)
+	cBuilder.AddArgs(parseUrl(a.sender)...)
 
 	// Message count
-	cBuilder.AddArgs("--count", strconv.Itoa(a.MessageCount))
+	cBuilder.AddArgs(parseCount(a.MessageCount)...)
 
 	// Timeout
-	cBuilder.AddArgs("--timeout", strconv.Itoa(a.sender.Timeout))
+	cBuilder.AddArgs(parseTimeout(a.sender.Timeout)...)
 
+	//
+	// Sender specific options
+	//
+	
 	// Source for message content (file or arg)
 	if a.MessageContentFromFileKey != "" {
 		cBuilder.AddVolumeMountConfigMapData(a.ContentConfigMap, MountPath, true)
@@ -97,7 +107,8 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	}
 
 	// Static options
-	cBuilder.AddArgs("--log-msgs", "json", "--on-release", "retry")
+	cBuilder.AddArgs("--log-msgs", "json")
+	cBuilder.AddArgs("--on-release", "retry")
 
 	// Retrieving container and adding to pod
 	c := cBuilder.Build()
