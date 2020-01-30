@@ -33,13 +33,13 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
-	github.com/openshift/api v0.0.0-20200114154634-6f8de8790817
+	github.com/openshift/api v0.0.0-20190322043348-8741ff068a47
 	github.com/openshift/client-go v0.0.0-20180830153425-431ec9a26e50
 	github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/phpdave11/gofpdi v1.0.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rh-messaging/activemq-artemis-operator v0.0.0
+	github.com/rh-messaging/activemq-artemis-operator v0.0.0-20200129215629-091fc37491be
 	github.com/rogpeppe/go-charset v0.0.0-20190617161244-0dc95cdf6f31 // indirect
 	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/crypto v0.0.0-20200115085410-6d4e4cb37c7d // indirect
@@ -69,7 +69,5 @@ require (
 	sigs.k8s.io/structured-merge-diff v1.0.2 // indirect
 	sigs.k8s.io/testing_frameworks v0.1.2 // indirect
 )
-
-replace github.com/rh-messaging/activemq-artemis-operator v0.0.0 => ../activemq-artemis-operator
 
 go 1.13
