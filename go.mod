@@ -33,14 +33,15 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
-	github.com/openshift/api v0.0.0-20190322043348-8741ff068a47
-	github.com/openshift/client-go v0.0.0-20180830153425-431ec9a26e50
+	github.com/openshift/api v0.0.0-20190508214137-81d064c11ff2
+	github.com/openshift/client-go v0.0.0-20190412095722-0255926f5393
 	github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/phpdave11/gofpdi v1.0.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rh-messaging/activemq-artemis-operator v0.0.0-20200129215629-091fc37491be
 	github.com/rogpeppe/go-charset v0.0.0-20190617161244-0dc95cdf6f31 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/crypto v0.0.0-20200115085410-6d4e4cb37c7d // indirect
 	golang.org/x/exp v0.0.0-20191227195350-da58074b4299 // indirect
@@ -56,14 +57,16 @@ require (
 	gonum.org/v1/plot v0.0.0-20200111075622-4abb28f724d5 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
+	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
-	k8s.io/api v0.17.1
-	k8s.io/apiextensions-apiserver v0.0.0-20181126155829-0cd23ebeb688
-	k8s.io/apimachinery v0.17.1
-	k8s.io/client-go v0.0.0-20181126152608-d082d5923d3c
-	k8s.io/code-generator v0.17.1 // indirect
+	k8s.io/api v0.0.0-20181204000039-89a74a8d264d
+	k8s.io/apiextensions-apiserver v0.0.0-20181204003920-20c909e7c8c3
+	k8s.io/apimachinery v0.0.0-20181127025237-2b1284ed4c93
+	k8s.io/client-go v10.0.0+incompatible
+	k8s.io/code-generator v0.0.0-20181117043124-c2090bec4d9b
 	k8s.io/gengo v0.0.0-20200114144118-36b2048a9120 // indirect
 	k8s.io/klog v1.0.0
+	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
 	k8s.io/utils v0.0.0-20191030222137-2b95a09bc58d
 	sigs.k8s.io/controller-runtime v0.1.8
 	sigs.k8s.io/structured-merge-diff v1.0.2 // indirect
