@@ -4,6 +4,7 @@ type OperatorType int
 
 const (
 	OperatorTypeQdr OperatorType = iota
+	OperatorTypeBroker OperatorType = iota
 )
 
 var (
@@ -13,6 +14,12 @@ var (
 			operatorName: "qdr-operator",
 			keepCdrs:     true,
 			apiVersion:   "v1alpha1",
+		}},
+		OperatorTypeBroker: &BrokerOperatorBuilder {BaseOperatorBuilder{
+			image: "quay.io/artemiscloud/activemq-artemis-operator:latest",
+			operatorName: "activemq-artemis-operator",
+			keepCdrs: true,
+			apiVersion: "v1alpha1",
 		}},
 	}
 )
