@@ -52,7 +52,6 @@ type BaseOperator struct {
 	cRoleBinding      rbacv1.ClusterRoleBinding
 	crds              []apiextv1b1.CustomResourceDefinition
 	keepCRD           bool
-	clientImageName	  string
 }
 
 type DefinitionStruct struct {
@@ -61,8 +60,6 @@ type DefinitionStruct struct {
 	Metadata   interface{} `json:"metadata"`
 	Spec       interface{} `json:"spec"`
 }
-
-const ClientImageName = "quay.io/enmasse/systemtests-clients:latest"
 
 func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config) OperatorSetupBuilder {
 	b.restConfig = restConfig
@@ -333,27 +330,6 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 		b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
 	}
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
-		b.errorItemCreate("deployment", err)
-	}
-}
-
-func (b *BaseOperator) getClientImage() string {
-    if (b.clientImageName!="") {
-        return b.clientImageName
-    } else {
-        return ClientImageName
-    }
-}
-
-func (b *BaseOperator) setupClients() {
-    log.Logf("Setting up clients image")
-    clientsDeploymentConfig := &appsv1.Deployment{}
-    clientsDeploymentConfig.Spec.Template.Spec.Containers[0].Name="systemtests-clients"
-    clientsDeploymentConfig.Spec.Template.Spec.Containers[0].Image=ClientImageName
-    clientsDeploymentConfig.Spec.Template.Spec.Containers[0].Command[0]="sleep"
-    clientsDeploymentConfig.Spec.Template.Spec.Containers[0].Args[0]="infinity"
-    clientsDeploymentConfig.Spec.Template.Spec.Containers[0].ImagePullPolicy="Always"
-    if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(clientsDeploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
 }
