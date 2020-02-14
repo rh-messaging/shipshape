@@ -22,14 +22,15 @@ import (
 
 //All the base operator stuff goes into this class. All operator-specific things go into specific classes.
 type BaseOperatorBuilder struct {
-	yamls        []string
-	image        string
-	namespace    string
-	restConfig   *rest.Config
-	operatorName string
-	keepCdrs     bool
-	apiVersion   string
-	finalized    bool
+	yamls         []string
+	image         string
+	namespace     string
+	restConfig    *rest.Config
+	operatorName  string
+	keepCdrs      bool
+	apiVersion    string
+	customCommand string
+	finalized     bool
 }
 
 type BaseOperator struct {
@@ -44,6 +45,7 @@ type BaseOperator struct {
 	operatorName      string
 	apiVersion        string
 	yamls             []string
+	customCommand     string
 	deploymentConfig  appsv1.Deployment
 	serviceAccount    corev1.ServiceAccount
 	role              rbacv1.Role
@@ -87,6 +89,13 @@ func (b *BaseOperatorBuilder) WithImage(image string) OperatorSetupBuilder {
 	} else {
 		panic(fmt.Errorf("can't edit operator builder post-finalization"))
 	}
+}
+
+func (b *BaseOperatorBuilder) WithCommand(command string) OperatorSetupBuilder {
+	if !b.finalized {
+		b.customCommand = command
+	}
+	return b
 }
 
 func (b *BaseOperatorBuilder) WithYamls(yamls []string) OperatorSetupBuilder {
@@ -156,7 +165,8 @@ func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator.apiVersion = b.apiVersion
 	baseOperator.operatorName = b.operatorName
 	baseOperator.yamls = b.yamls
-	baseOperator.keepCRD = b.keepCdrs
+	baseOperator.keepCRD = b.keepCdrs	
+	baseOperator.customCommand = b.customCommand
 	if err := baseOperator.Setup(); err != nil {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
 	}
@@ -329,6 +339,9 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 		//Customize the spec if that is requested
 		b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
 	}
+	if b.customCommand!="" {
+		b.deploymentConfig.Spec.Template.Spec.Containers[0].Command = []string {b.customCommand}
+	}
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
@@ -371,7 +384,7 @@ func (b *BaseOperator) Setup() error {
 }
 
 func (b *BaseOperator) TeardownEach() error {
-	if (b.keepCRD) {
+	if b.keepCRD {
 		return nil
 	} else {
 		err := b.kubeClient.CoreV1().

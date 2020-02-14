@@ -26,6 +26,7 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 		broker.brokerClient = brokerclient
 	}
 
+	broker.customCommand = b.customCommand
 	// Setting up the defaults
 	baseImportPath := "https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/"
 	if broker.yamls == nil {

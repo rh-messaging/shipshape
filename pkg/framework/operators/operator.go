@@ -6,6 +6,7 @@ type OperatorSetupBuilder interface {
 	NewBuilder(restConfig *rest.Config) OperatorSetupBuilder
 	WithNamespace(namespace string) OperatorSetupBuilder
 	WithImage(image string) OperatorSetupBuilder
+	WithCommand(command string) OperatorSetupBuilder
 	WithYamls(yamls []string) OperatorSetupBuilder
 	AddYaml(yaml string) OperatorSetupBuilder
 	WithOperatorName(name string) OperatorSetupBuilder
