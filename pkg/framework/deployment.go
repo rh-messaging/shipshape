@@ -63,8 +63,8 @@ func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string,
 			}
 			return false, err
 		}
-
-		if int(ds.Status.ReadyReplicas) >= count {
+		//Needs to be *exactly* the count, not count or more. This matters for our tests.
+		if int(ds.Status.ReadyReplicas) == count {
 			return true, nil
 		}
 		log.Logf("Waiting for full availability of %s stateful set (%d/%d)", name, ds.Status.ReadyReplicas, count)
