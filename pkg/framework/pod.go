@@ -8,6 +8,8 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -179,7 +181,7 @@ func (c *ContextData) GetLogs(podName string) (string, error) {
 }
 
 func Execute(ctx1 *ContextData, command string, arguments string, podname string) (string, string, error) {
-	pod, err := ctx1.Clients.KubeClient.CoreV1().Pods(ctx1.Namespace).Get(podname, v1.GetOptions{})
+	pod, err := ctx1.Clients.KubeClient.CoreV1().Pods(ctx1.Namespace).Get(podname, metav1.GetOptions{})
 	request := ctx1.Clients.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(pod.Namespace).
