@@ -165,7 +165,7 @@ func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator.apiVersion = b.apiVersion
 	baseOperator.operatorName = b.operatorName
 	baseOperator.yamls = b.yamls
-	baseOperator.keepCRD = b.keepCdrs	
+	baseOperator.keepCRD = b.keepCdrs
 	baseOperator.customCommand = b.customCommand
 	if err := baseOperator.Setup(); err != nil {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
