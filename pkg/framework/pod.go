@@ -4,6 +4,8 @@
 package framework
 
 import (
+	"bytes"
+	"io"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -154,4 +156,21 @@ func (cb *ContainerBuilder) AddVolumeMountConfigMapData(volumeName string, mount
 // Build returns the prepared Container to be used within a Pod
 func (cb *ContainerBuilder) Build() v1.Container {
 	return cb.c
+}
+
+//returns whole pod log as a (meaty) string
+func (c *ContextData) GetLogs(podName string) (string, error) {
+	podLogOpts := v1.PodLogOptions{}
+	request := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).GetLogs(podName, &podLogOpts)
+	podLogs, err := request.Stream()
+	if err != nil {
+		return "", err
+	}
+	defer podLogs.Close()
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, podLogs)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
