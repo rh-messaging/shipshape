@@ -5,8 +5,11 @@ package framework
 
 import (
 	"bytes"
+	"github.com/pkg/errors"
 	"io"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 )
 
 //
@@ -174,3 +177,32 @@ func (c *ContextData) GetLogs(podName string) (string, error) {
 	}
 	return buf.String(), nil
 }
+
+func Execute(ctx1 *ContextData, command string, arguments string, podname string) (string, string, error) {
+	pod, err := ctx1.Clients.KubeClient.CoreV1().Pods(ctx1.Namespace).Get(podname, v1.GetOptions{})
+	request := ctx1.Clients.KubeClient.CoreV1().RESTClient().
+		Post().
+		Namespace(pod.Namespace).
+		Resource("pods").
+		Name(pod.Name).
+		SubResource("exec").
+		VersionedParams(&v1.PodExecOptions{
+			Command: []string{command, arguments},
+			Stdin:   true,
+			Stdout:  true,
+			Stderr:  true,
+			TTY:     true,
+		}, scheme.ParameterCodec)
+	exec, err := remotecommand.NewSPDYExecutor(&RestConfig, "POST", request.URL())
+	buf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: buf,
+		Stderr: errBuf,
+	})
+	if err != nil {
+		return "", "", errors.Wrapf(err, "Failed executing command %s on %v/%v", command, pod.Namespace, pod.Name)
+	}
+	return buf.String(), errBuf.String(), nil
+}
+
