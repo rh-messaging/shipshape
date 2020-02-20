@@ -195,7 +195,7 @@ func Execute(ctx1 *ContextData, command string, arguments string, podname string
 			Stderr:  true,
 			TTY:     true,
 		}, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(&RestConfig, "POST", request.URL())
+	exec, err := remotecommand.NewSPDYExecutor(&restConfig, "POST", request.URL())
 	buf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 	err = exec.Stream(remotecommand.StreamOptions{

@@ -42,7 +42,7 @@ var (
 	Timeout              = time.Second * 600
 	CleanupRetryInterval = time.Second * 1
 	CleanupTimeout       = time.Second * 5
-	RestConfig rest.Config
+	restConfig           rest.Config
 
 )
 
@@ -183,15 +183,15 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		// Generating restConfig
 		clientConfig, err := clientcmd.NewClientConfigFromBytes(bytes)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		RestConfig, err := clientConfig.ClientConfig()
+		restConfig, err := clientConfig.ClientConfig()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		// Create the client instances
-		kubeClient, err := clientset.NewForConfig(RestConfig)
+		kubeClient, err := clientset.NewForConfig(restConfig)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		extClient, err := apiextension.NewForConfig(RestConfig)
+		extClient, err := apiextension.NewForConfig(restConfig)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		dynClient, err := dynamic.NewForConfig(RestConfig)
+		dynClient, err := dynamic.NewForConfig(restConfig)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		// Initilizing the ClientSet for context
@@ -231,7 +231,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 
 		// OpenShift specific initialization
 		if ctx.IsOpenShift() {
-			ctx.Clients.OcpClient.RoutesClient, err = routev1.NewForConfig(RestConfig)
+			ctx.Clients.OcpClient.RoutesClient, err = routev1.NewForConfig(restConfig)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		}
 
@@ -246,7 +246,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			log.Logf("CUSTOM BUILDERS PROVIDED")
 		}
 		for _, builder := range f.builders {
-			builder.NewBuilder(RestConfig)
+			builder.NewBuilder(restConfig)
 			builder.WithNamespace(namespace.GetName())
 			operator, err := builder.Build()
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
