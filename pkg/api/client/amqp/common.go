@@ -3,6 +3,7 @@ package amqp
 import (
 	"github.com/onsi/gomega"
 	"github.com/rh-messaging/shipshape/pkg/framework"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
@@ -39,8 +40,16 @@ func (a *AmqpClientCommon) Status() ClientStatus {
 	}
 
 	pod, err := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).Get(a.Pod.Name, v12.GetOptions{})
-	gomega.Expect(err).To(gomega.BeNil())
-	gomega.Expect(pod).NotTo(gomega.BeNil())
+	// Errors might happen and we cannot simply assert it will be nil,
+	// or it will cause a panic.
+	if err != nil {
+		log.Logf("error getting pod status: %s", err)
+		return Unknown
+	}
+	if pod == nil {
+		log.Logf("error getting pod status (pod is nil): %s", err)
+		return Unknown
+	}
 
 	switch pod.Status.Phase {
 	case v1.PodPending:
