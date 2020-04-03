@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
+	"k8s.io/client-go/rest"
 	"strings"
 	"time"
 
@@ -41,6 +42,8 @@ var (
 	Timeout              = time.Second * 600
 	CleanupRetryInterval = time.Second * 1
 	CleanupTimeout       = time.Second * 5
+	restConfig           rest.Config
+
 )
 
 type ClientSet struct {
