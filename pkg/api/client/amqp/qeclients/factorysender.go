@@ -35,6 +35,11 @@ func NewSenderBuilder(name string, impl AmqpQEClientImpl, data framework.Context
 	return sb
 }
 
+func (a *AmqpQESenderBuilder) Count(count int) *AmqpQESenderBuilder {
+	a.MessageCount = count
+	return a
+}
+
 func (a *AmqpQESenderBuilder) Timeout(timeout int) *AmqpQESenderBuilder {
 	a.sender.Timeout = timeout
 	return a
@@ -97,7 +102,7 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	//
 	// Sender specific options
 	//
-	
+
 	// Source for message content (file or arg)
 	if a.MessageContentFromFileKey != "" {
 		cBuilder.AddVolumeMountConfigMapData(a.ContentConfigMap, MountPath, true)
