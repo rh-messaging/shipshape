@@ -1,9 +1,12 @@
 package operators
 
-import "k8s.io/client-go/rest"
+import (
+	"k8s.io/client-go/rest"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+)
 
 type OperatorSetupBuilder interface {
-	NewBuilder(restConfig *rest.Config) OperatorSetupBuilder
+	NewBuilder(restConfig *rest.Config, rawConfig *clientcmdapi.Config) OperatorSetupBuilder
 	WithNamespace(namespace string) OperatorSetupBuilder
 	WithImage(image string) OperatorSetupBuilder
 	WithCommand(command string) OperatorSetupBuilder

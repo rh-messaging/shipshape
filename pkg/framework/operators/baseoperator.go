@@ -16,6 +16,7 @@ import (
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"net/http"
 	"strings"
 )
@@ -26,6 +27,7 @@ type BaseOperatorBuilder struct {
 	image         string
 	namespace     string
 	restConfig    *rest.Config
+	rawConfig     *clientcmdapi.Config
 	operatorName  string
 	keepCdrs      bool
 	apiVersion    string
@@ -35,8 +37,10 @@ type BaseOperatorBuilder struct {
 
 type BaseOperator struct {
 	restConfig        *rest.Config
+	rawConfig         *clientcmdapi.Config
 	kubeClient        *clientset.Clientset
 	extClient         *apiextension.Clientset
+	context           string
 	namespace         string
 	operatorInterface interface{}
 	image             string
@@ -63,8 +67,9 @@ type DefinitionStruct struct {
 	Spec       interface{} `json:"spec"`
 }
 
-func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config) OperatorSetupBuilder {
+func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config, rawConfig *clientcmdapi.Config) OperatorSetupBuilder {
 	b.restConfig = restConfig
+	b.rawConfig = rawConfig
 	return b
 }
 
@@ -339,8 +344,8 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 		//Customize the spec if that is requested
 		b.deploymentConfig.Spec.Template.Spec.Containers[0].Image = b.image
 	}
-	if b.customCommand!="" {
-		b.deploymentConfig.Spec.Template.Spec.Containers[0].Command = []string {b.customCommand}
+	if b.customCommand != "" {
+		b.deploymentConfig.Spec.Template.Spec.Containers[0].Command = []string{b.customCommand}
 	}
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)

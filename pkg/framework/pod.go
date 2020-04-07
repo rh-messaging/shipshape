@@ -5,10 +5,12 @@ package framework
 
 import (
 	"bytes"
+	"context"
 	"github.com/pkg/errors"
 	"io"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
@@ -178,6 +180,23 @@ func (c *ContextData) GetLogs(podName string) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func (c *ContextData) WaitForPodStatus(podName string, status v1.PodPhase, timeout time.Duration, interval time.Duration) (*v1.Pod, error) {
+	var pod *v1.Pod
+	var err error
+	ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+	defer cancel()
+	err = RetryWithContext(ctx, interval, func() (bool, error) {
+		pod, err = c.Clients.KubeClient.CoreV1().Pods(c.Namespace).Get(podName, metav1.GetOptions{})
+		if err != nil {
+			// pod does not exist yet
+			return false, nil
+		}
+		return pod.Status.Phase == status, nil
+	})
+
+	return pod, err
 }
 
 func Execute(ctx1 *ContextData, command string, arguments string, podname string) (string, string, error) {

@@ -5,6 +5,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/rh-messaging/shipshape/pkg/framework"
 	"github.com/rh-messaging/shipshape/pkg/framework/ginkgowrapper"
+	"os"
 	"testing"
 )
 
@@ -18,6 +19,7 @@ func Initialize(t *testing.T, uniqueId string, description string) {
 	framework.HandleFlags()
 	gomega.RegisterFailHandler(ginkgowrapper.Fail)
 	ginkgo.RunSpecs(t, description)
+	os.Setenv("OPERATOR_TESTING", "true")
 }
 
 // After suite validation teardown (happens only once per test suite)
