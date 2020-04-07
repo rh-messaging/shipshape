@@ -81,6 +81,7 @@ type ContextData struct {
 	CertManagerPresent bool // if crd is detected
 	OperatorMap        map[operators.OperatorType]operators.OperatorSetup
 	isOpenShift        *bool
+	EventHandler       events.EventHandler
 }
 
 type Framework struct {
@@ -90,7 +91,6 @@ type Framework struct {
 	ContextMap map[string]*ContextData
 
 	SkipNamespaceCreation bool // Whether to skip creating a namespace
-	EventHandler          events.EventHandler
 	cleanupHandleEach     CleanupActionHandle
 	cleanupHandleSuite    CleanupActionHandle
 	afterEachDone         bool
@@ -261,8 +261,8 @@ func (f *Framework) BeforeEach(contexts ...string) {
 
 		options := kubeinformers.WithNamespace(namespace.GetName())
 		informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, time.Second*30, options)
-		EventHandler := events.EventHandler{}
-		EventHandler.CreateEventInformers(informerFactory)
+		ctx.EventHandler = events.EventHandler{}
+		ctx.EventHandler.CreateEventInformers(informerFactory)
 	}
 
 	// setup the operators
