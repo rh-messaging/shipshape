@@ -16,12 +16,14 @@ package framework
 
 import (
 	"fmt"
+	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
 	v12 "k8s.io/client-go/informers/apps/v1"
 	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"strings"
 	"time"
 
@@ -33,9 +35,9 @@ import (
 	e2elog "github.com/rh-messaging/shipshape/pkg/framework/log"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
+	kubeinformers "k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	kubeinformers "k8s.io/client-go/informers"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
@@ -47,7 +49,6 @@ var (
 	CleanupRetryInterval = time.Second * 1
 	CleanupTimeout       = time.Second * 5
 	restConfig           rest.Config
-
 )
 
 type ClientSet struct {
@@ -56,8 +57,6 @@ type ClientSet struct {
 	DynClient  dynamic.Interface
 	OcpClient  ocpClient
 }
-
-type DeleteFunction func(obj interface{})
 
 type ocpClient struct {
 	RoutesClient *routev1.Clientset
@@ -95,14 +94,11 @@ type Framework struct {
 	ContextMap map[string]*ContextData
 
 	SkipNamespaceCreation bool // Whether to skip creating a namespace
+	EventHandler          events.EventHandler
 	cleanupHandleEach     CleanupActionHandle
 	cleanupHandleSuite    CleanupActionHandle
 	afterEachDone         bool
 	builders              []operators.OperatorSetupBuilder
-	statefulSetInformer   v12.StatefulSetInformer
-	pvcInformer           v1.PersistentVolumeClaimInformer
-	podInformer           v1.PodInformer
-
 }
 
 // Framework Builder type
@@ -120,7 +116,7 @@ func NewFrameworkBuilder(baseName string) Builder {
 
 	b := Builder{
 		f: &Framework{
-			BaseName: baseName,
+			BaseName:   baseName,
 			ContextMap: make(map[string]*ContextData),
 		},
 		contexts: []string{TestContext.GetContexts()[0]},
@@ -269,7 +265,8 @@ func (f *Framework) BeforeEach(contexts ...string) {
 
 		options := kubeinformers.WithNamespace(namespace.GetName())
 		informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, time.Second*30, options)
-		f.CreateEventInformers(informerFactory)
+		EventHandler := events.EventHandler{}
+		EventHandler.CreateEventInformers(informerFactory)
 	}
 
 	// setup the operators
@@ -278,31 +275,6 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		f.AfterEach()
 	}
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-}
-
-
-// CreateEventHandler Creates event hanlder on framework initialization
-func (f *Framework) CreateEventInformers(kubeInformerFactory kubeinformers.SharedInformerFactory) {
-	f.statefulSetInformer = kubeInformerFactory.Apps().V1().StatefulSets()
-	f.pvcInformer = kubeInformerFactory.Core().V1().PersistentVolumeClaims()
-	f.podInformer = kubeInformerFactory.Core().V1().Pods()
-	log.Logf("Created informers")
-}
-
-
-//RegisterDeletePodEventCallback Registers a delete event callback to list of callbacks. Can be called multiple times.
-func (f *Framework) RegisterDeletePodEventCallback(callback DeleteFunction) {
-	f.podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{DeleteFunc: callback})
-}
-
-// RegisterDeletePvcEventCallback Registers event callback for PVC delete events
-func (f *Framework) RegisterDeletePvcEventCallback(callback DeleteFunction) {
-	f.pvcInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{DeleteFunc: callback})
-}
-
-// RegisterDeleteStatefulSetCallback Registers event handler for SS delete events
-func (f *Framework) RegisterDeleteStatefulSetCallback(callback DeleteFunction) {
-	f.statefulSetInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{DeleteFunc: callback})
 }
 
 // AfterEach deletes the namespace, after reading its events.
