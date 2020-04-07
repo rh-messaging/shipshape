@@ -19,11 +19,7 @@ import (
 	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
-	v12 "k8s.io/client-go/informers/apps/v1"
-	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"strings"
 	"time"
 
