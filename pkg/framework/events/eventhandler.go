@@ -62,7 +62,7 @@ func (eh *EventHandler) ClearCallbacks() {
 	eh.callbacks = make(map[Emitter]map[EventType]Callback)
 }
 
-func (eh *EventHandler) AddEventHandler(emitter Emitter, eventType EventType, callback Callback) error {
+func (eh *EventHandler) AddEventHandler(emitter Emitter, eventType EventType, callback Callback) {
 	localMap := make(map[EventType]Callback)
 	localMap[eventType] = callback
 	eh.callbacks[emitter] = localMap
