@@ -16,6 +16,7 @@ package framework
 
 import (
 	"fmt"
+	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
 	"k8s.io/client-go/rest"
@@ -30,6 +31,7 @@ import (
 	e2elog "github.com/rh-messaging/shipshape/pkg/framework/log"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
+	kubeinformers "k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -43,7 +45,6 @@ var (
 	CleanupRetryInterval = time.Second * 1
 	CleanupTimeout       = time.Second * 5
 	restConfig           rest.Config
-
 )
 
 type ClientSet struct {
@@ -80,6 +81,7 @@ type ContextData struct {
 	CertManagerPresent bool // if crd is detected
 	OperatorMap        map[operators.OperatorType]operators.OperatorSetup
 	isOpenShift        *bool
+	EventHandler       events.EventHandler
 }
 
 type Framework struct {
@@ -110,7 +112,7 @@ func NewFrameworkBuilder(baseName string) Builder {
 
 	b := Builder{
 		f: &Framework{
-			BaseName: baseName,
+			BaseName:   baseName,
 			ContextMap: make(map[string]*ContextData),
 		},
 		contexts: []string{TestContext.GetContexts()[0]},
@@ -256,6 +258,11 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		if !f.SkipNamespaceCreation {
 			ctx.AddNamespacesToDelete(namespace)
 		}
+
+		options := kubeinformers.WithNamespace(namespace.GetName())
+		informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, time.Second*30, options)
+		ctx.EventHandler = events.EventHandler{}
+		ctx.EventHandler.CreateEventInformers(informerFactory)
 	}
 
 	// setup the operators
