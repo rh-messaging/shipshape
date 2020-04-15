@@ -93,10 +93,6 @@ func RegisterFlags() {
 	flag.StringVar(&TestContext.ReportDir, "report-dir", "", "Path to the directory where the JUnit XML reports should be saved. Default is empty, which doesn't generate these reports.")
 	// kubeconfig flag -> kubeconfig variable -> default location 
 	flag.StringVar(&TestContext.KubeConfig, clientcmd.RecommendedConfigPathFlag, os.Getenv(clientcmd.RecommendedConfigPathEnvVar), "Path to kubeconfig containing embedded authinfo.")
-	if (len(TestContext.KubeConfig)==0) {
-		home := os.Getenv("HOME")
-		TestContext.KubeConfig= home + "/.kube/config"
-	}
 	flag.StringVar(&TestContext.CertDir, "cert-dir", "", "Path to the directory containing the certs. Default is empty, which doesn't use certs.")
 	flag.StringVar(&TestContext.RepoRoot, "repo-root", "../../", "Root directory of kubernetes repository, for finding test files.")
 	flag.StringVar(&TestContext.KubectlPath, "kubectl-path", "kubectl", "The kubectl binary to use. For development, you might use 'cluster/kubectl.sh' here.")
@@ -178,12 +174,13 @@ func (t TestContextType) GetContexts() []string {
 	}
 
 	kubeConfig, err := clientcmd.LoadFromFile(t.KubeConfig)
-	if err == nil {
-		return []string{kubeConfig.CurrentContext}
-	}
-
 	gomega.Expect(err).To(gomega.BeNil())
-	return nil
+
+	if kubeConfig.CurrentContext == "" {
+		panic(fmt.Sprintf("No context provided and current-context not defined in KUBECONFIG file: %s", t.KubeConfig))
+	}
+	return []string{kubeConfig.CurrentContext}
+
 }
 
 // ContextsAvailable returns the number of contexts available after

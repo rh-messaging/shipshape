@@ -187,6 +187,8 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		restConfig, err := clientConfig.ClientConfig()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		rawConfig, err := clientConfig.RawConfig()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		// Create the client instances
 		kubeClient, err := clientset.NewForConfig(restConfig)
@@ -209,6 +211,9 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		var namespace *corev1.Namespace
 		if !f.SkipNamespaceCreation {
 			namespace = generateNamespace(kubeClient, f.BaseName, namespaceLabels)
+		} else {
+			tempCtx := rawConfig.Contexts[context]
+			namespace, err = kubeClient.CoreV1().Namespaces().Get(tempCtx.Namespace, metav1.GetOptions{})
 		}
 		gomega.Expect(namespace).NotTo(gomega.BeNil())
 
@@ -248,7 +253,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			log.Logf("CUSTOM BUILDERS PROVIDED")
 		}
 		for _, builder := range f.builders {
-			builder.NewBuilder(restConfig)
+			builder.NewBuilder(restConfig, &rawConfig)
 			builder.WithNamespace(namespace.GetName())
 			operator, err := builder.Build()
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())

@@ -26,6 +26,7 @@ before_install:
   - sudo mv kubectl /usr/local/bin/
 
   # Get tools
+  - git clone https://github.com/skupperproject/skupper-cli.git && cd skupper-cli && make build && cp skupper $GOPATH/bin
   - env GO111MODULE=off go get sigs.k8s.io/kind
   - env GO111MODULE=off go get github.com/jfeliu007/goplantuml/parser
   - env GO111MODULE=off go get github.com/jfeliu007/goplantuml/cmd/goplantuml

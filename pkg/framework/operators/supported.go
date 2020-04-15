@@ -4,7 +4,8 @@ type OperatorType int
 
 const (
 	OperatorTypeQdr OperatorType = iota
-	OperatorTypeBroker OperatorType = iota
+	OperatorTypeBroker
+	OperatorTypeSkupper
 )
 
 var (
@@ -20,6 +21,9 @@ var (
 			operatorName: "activemq-artemis-operator",
 			keepCdrs: true,
 			apiVersion: "v1alpha1",
+		}},
+		OperatorTypeSkupper: &SkupperOperatorBuilder {BaseOperatorBuilder: BaseOperatorBuilder{
+			operatorName: "skupper-router",
 		}},
 	}
 )

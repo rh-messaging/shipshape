@@ -15,12 +15,31 @@
 package framework
 
 import (
+	"context"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 func (c *ContextData) GetService(name string) (*corev1.Service, error) {
 	return c.Clients.KubeClient.CoreV1().Services(c.Namespace).Get(name, metav1.GetOptions{})
+}
+
+func (c *ContextData) WaitForService(name string, timeout time.Duration, interval time.Duration) (*corev1.Service, error) {
+	var service *corev1.Service
+	var err error
+	ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+	defer cancel()
+	err = RetryWithContext(ctx, interval, func() (bool, error) {
+		service, err = c.GetService(name)
+		if err != nil {
+			// service does not exist yet
+			return false, nil
+		}
+		return service != nil, nil
+	})
+
+	return service, err
 }
 
 // GetPorts returns an int slice with all ports exposed
