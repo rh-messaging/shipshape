@@ -4,6 +4,10 @@ package java
 
 import "net/url"
 
+const (
+	DefaultAddress = "/default"
+)
+
 // Url parses the URL and returns the list of arguments
 // needed by the cli-java client
 func Url(u string) []string {
@@ -13,5 +17,8 @@ func Url(u string) []string {
 	}
 	hostPort := u[0 : len(u)-len(parsedUrl.Path)]
 	address := parsedUrl.Path
+	if address == "" {
+		address = DefaultAddress
+	}
 	return []string{"--broker", hostPort, "--address", address}
 }
