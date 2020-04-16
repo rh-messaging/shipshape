@@ -10,11 +10,12 @@ type OperatorSetupBuilder interface {
 	WithNamespace(namespace string) OperatorSetupBuilder
 	WithImage(image string) OperatorSetupBuilder
 	WithCommand(command string) OperatorSetupBuilder
-	WithYamls(yamls []string) OperatorSetupBuilder
-	AddYaml(yaml string) OperatorSetupBuilder
+	WithYamlURLs(yamls []string) OperatorSetupBuilder
+	AddYamlURL(yaml string) OperatorSetupBuilder
 	WithOperatorName(name string) OperatorSetupBuilder
 	KeepCdr(keepCdrs bool) OperatorSetupBuilder
 	WithApiVersion(apiVersion string) OperatorSetupBuilder
+	WithYamls(yamls [][]byte) OperatorSetupBuilder
 	Build() (OperatorSetup, error)
 	OperatorType() OperatorType
 }

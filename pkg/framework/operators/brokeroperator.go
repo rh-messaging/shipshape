@@ -2,15 +2,15 @@ package operators
 
 import (
 	"fmt"
+	brokerclientset "github.com/rh-messaging/activemq-artemis-operator/pkg/client/clientset/versioned"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	brokerclientset "github.com/rh-messaging/activemq-artemis-operator/pkg/client/clientset/versioned"
 )
 
 // Reusing BaseOperatorBuilder implementation and adding
 // the "abstract" method Build() and OperatorType()
-type BrokerOperatorBuilder struct{
+type BrokerOperatorBuilder struct {
 	BaseOperatorBuilder
 }
 
@@ -20,7 +20,7 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 		return broker, err
 	}
 
-	if brokerclient, err := brokerclientset.NewForConfig(b.restConfig); err!= nil {
+	if brokerclient, err := brokerclientset.NewForConfig(b.restConfig); err != nil {
 		return broker, err
 	} else {
 		broker.brokerClient = brokerclient
@@ -28,16 +28,18 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 
 	broker.customCommand = b.customCommand
 	// Setting up the defaults
-	baseImportPath := "https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/"
-	if broker.yamls == nil {
-		broker.yamls = []string{
-			baseImportPath + "service_account.yaml",
-			baseImportPath + "role.yaml",
-			baseImportPath + "role_binding.yaml",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemis_crd.yaml",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemisaddress_crd.yaml",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemisscaledown_crd.yaml",
-			baseImportPath + "operator.yaml",
+	if broker.yamls != nil {
+
+	} else if broker.yamlURLs == nil {
+		baseImportPath := "https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/"
+		broker.yamlURLs = []string{
+			baseImportPath + "service_account.yamls",
+			baseImportPath + "role.yamls",
+			baseImportPath + "role_binding.yamls",
+			baseImportPath + "crds/broker_v2alpha1_activemqartemis_crd.yamls",
+			baseImportPath + "crds/broker_v2alpha1_activemqartemisaddress_crd.yamls",
+			baseImportPath + "crds/broker_v2alpha1_activemqartemisscaledown_crd.yamls",
+			baseImportPath + "operator.yamls",
 		}
 	}
 

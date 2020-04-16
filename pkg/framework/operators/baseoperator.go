@@ -23,7 +23,8 @@ import (
 
 //All the base operator stuff goes into this class. All operator-specific things go into specific classes.
 type BaseOperatorBuilder struct {
-	yamls         []string
+	yamls         [][]byte
+	yamlURLs      []string
 	image         string
 	namespace     string
 	restConfig    *rest.Config
@@ -48,7 +49,8 @@ type BaseOperator struct {
 	groupName         string
 	operatorName      string
 	apiVersion        string
-	yamls             []string
+	yamlURLs          []string
+	yamls             [][]byte
 	customCommand     string
 	deploymentConfig  appsv1.Deployment
 	serviceAccount    corev1.ServiceAccount
@@ -103,18 +105,24 @@ func (b *BaseOperatorBuilder) WithCommand(command string) OperatorSetupBuilder {
 	return b
 }
 
-func (b *BaseOperatorBuilder) WithYamls(yamls []string) OperatorSetupBuilder {
+func (b *BaseOperatorBuilder) WithYamlURLs(yamls []string) OperatorSetupBuilder {
 	if !b.finalized {
-		b.yamls = yamls
+		b.yamlURLs = yamls
 		return b
 	} else {
 		panic(fmt.Errorf("can't edit operator builder post-finalization"))
 	}
 }
 
-func (b *BaseOperatorBuilder) AddYaml(yaml string) OperatorSetupBuilder {
+// Pass loaded yamls objects instead of URLs
+func (b *BaseOperatorBuilder) WithYamls(yamls [][]byte) OperatorSetupBuilder {
+	b.yamls = yamls
+	return b
+}
+
+func (b *BaseOperatorBuilder) AddYamlURL(yaml string) OperatorSetupBuilder {
 	if !b.finalized {
-		b.yamls = append(b.yamls, yaml)
+		b.yamlURLs = append(b.yamlURLs, yaml)
 		return b
 	} else {
 		panic(fmt.Errorf("can't edit operator builder post-finalization"))
@@ -169,6 +177,7 @@ func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator.namespace = b.namespace
 	baseOperator.apiVersion = b.apiVersion
 	baseOperator.operatorName = b.operatorName
+	baseOperator.yamlURLs = b.yamlURLs
 	baseOperator.yamls = b.yamls
 	baseOperator.keepCRD = b.keepCdrs
 	baseOperator.customCommand = b.customCommand
@@ -204,7 +213,7 @@ func (b *BaseOperator) InitFromBaseOperatorBuilder(builder *BaseOperatorBuilder)
 }
 
 func (b *BaseOperator) loadJson(url string) ([]byte, error) {
-	resp, err := http.Get(url) //load yaml body from url
+	resp, err := http.Get(url) //load yamls body from url
 	if err != nil {
 		log.Logf("error during loading %s: %v", url, err)
 		return nil, err
@@ -301,38 +310,70 @@ func (b *BaseOperator) setupCRD(jsonObj []byte) {
 	b.crds = append(b.crds, CRD)
 }
 
-func (b *BaseOperator) SetupYamls() error {
-	for i, url := range b.yamls {
-
+func (b *BaseOperator) setupYamlsFromUrls() error {
+	for _, url := range b.yamlURLs {
 		jsonItem, err := b.loadJson(url)
 		if err != nil {
-			return fmt.Errorf("failed to load yaml #%d: %v", i, err)
+			return err
 		}
-		var def DefinitionStruct
-		err = json.Unmarshal(jsonItem, &def)
+		err = b.createKubeObject(jsonItem)
 		if err != nil {
-			return fmt.Errorf("failed to load json #%d: %v", i, err)
-		}
-		switch def.Kind {
-		case "ServiceAccount":
-			b.setupServiceAccount(jsonItem)
-		case "Role":
-			b.setupRole(jsonItem)
-		case "ClusterRole":
-			b.setupClusterRole(jsonItem)
-		case "RoleBinding":
-			b.setupRoleBinding(jsonItem)
-		case "ClusterRoleBinding":
-			b.setupClusterRoleBinding(jsonItem)
-		case "CustomResourceDefinition":
-			b.setupCRD(jsonItem)
-		case "Deployment":
-			b.setupDeployment(jsonItem)
-		default:
-			log.Logf("can't find item type %s", def.Kind)
+			return err
 		}
 	}
 	return nil
+}
+
+func (b *BaseOperator) createKubeObject(jsonItem []byte) error {
+	var def DefinitionStruct
+	err := json.Unmarshal(jsonItem, &def)
+	if err != nil {
+		return err
+	}
+
+	switch def.Kind {
+	case "ServiceAccount":
+		b.setupServiceAccount(jsonItem)
+	case "Role":
+		b.setupRole(jsonItem)
+	case "ClusterRole":
+		b.setupClusterRole(jsonItem)
+	case "RoleBinding":
+		b.setupRoleBinding(jsonItem)
+	case "ClusterRoleBinding":
+		b.setupClusterRoleBinding(jsonItem)
+	case "CustomResourceDefinition":
+		b.setupCRD(jsonItem)
+	case "Deployment":
+		b.setupDeployment(jsonItem)
+	default:
+		return fmt.Errorf("can't find item type %s", def.Kind)
+	}
+	return nil
+}
+
+func (b *BaseOperator) setupPreparedYamls() error {
+	for _, item := range b.yamls {
+		jsonItem, err := yaml.YAMLToJSON(item)
+		if err != nil {
+			return err
+		}
+		err = b.createKubeObject(jsonItem)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *BaseOperator) SetupYamls() error {
+	if b.yamlURLs != nil {
+		return b.setupYamlsFromUrls()
+	} else if b.yamls != nil {
+		return b.setupPreparedYamls()
+	} else {
+		return fmt.Errorf("yaml definitions were not supplied to operator builder")
+	}
 }
 
 func (b *BaseOperator) setupDeployment(jsonItem []byte) {

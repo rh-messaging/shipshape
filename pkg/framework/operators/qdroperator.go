@@ -10,7 +10,7 @@ import (
 
 // Reusing BaseOperatorBuilder implementation and adding
 // the "abstract" method Build() and OperatorType()
-type QdrOperatorBuilder struct{
+type QdrOperatorBuilder struct {
 	BaseOperatorBuilder
 }
 
@@ -29,15 +29,15 @@ func (q *QdrOperatorBuilder) Build() (OperatorSetup, error) {
 
 	// Setting up the defaults
 	baseImportPath := "https://raw.githubusercontent.com/interconnectedcloud/qdr-operator/master/deploy/"
-	if qdr.yamls == nil {
-		qdr.yamls = []string{
-			baseImportPath + "service_account.yaml",
-			baseImportPath + "role.yaml",
-			baseImportPath + "role_binding.yaml",
-			baseImportPath + "cluster_role.yaml",
-			baseImportPath + "cluster_role_binding.yaml",
-			baseImportPath + "crds/interconnectedcloud_v1alpha1_interconnect_crd.yaml",
-			baseImportPath + "operator.yaml",
+	if qdr.yamlURLs == nil {
+		qdr.yamlURLs = []string{
+			baseImportPath + "service_account.yamls",
+			baseImportPath + "role.yamls",
+			baseImportPath + "role_binding.yamls",
+			baseImportPath + "cluster_role.yamls",
+			baseImportPath + "cluster_role_binding.yamls",
+			baseImportPath + "crds/interconnectedcloud_v1alpha1_interconnect_crd.yamls",
+			baseImportPath + "operator.yamls",
 		}
 	}
 
@@ -50,7 +50,7 @@ func (q *QdrOperatorBuilder) OperatorType() OperatorType {
 
 type QdrOperator struct {
 	BaseOperator
-	qdrClient  qdrclientset.Interface
+	qdrClient qdrclientset.Interface
 }
 
 func (q *QdrOperator) Namespace() string {
