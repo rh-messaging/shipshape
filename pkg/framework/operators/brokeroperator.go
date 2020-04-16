@@ -33,13 +33,13 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 	} else if broker.yamlURLs == nil {
 		baseImportPath := "https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/"
 		broker.yamlURLs = []string{
-			baseImportPath + "service_account.yamls",
-			baseImportPath + "role.yamls",
-			baseImportPath + "role_binding.yamls",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemis_crd.yamls",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemisaddress_crd.yamls",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemisscaledown_crd.yamls",
-			baseImportPath + "operator.yamls",
+			baseImportPath + "service_account.yaml",
+			baseImportPath + "role.yaml",
+			baseImportPath + "role_binding.yaml",
+			baseImportPath + "crds/broker_v2alpha1_activemqartemis_crd.yaml",
+			baseImportPath + "crds/broker_v2alpha1_activemqartemisaddress_crd.yaml",
+			baseImportPath + "crds/broker_v2alpha1_activemqartemisscaledown_crd.yaml",
+			baseImportPath + "operator.yaml",
 		}
 	}
 
