@@ -34,6 +34,7 @@ type BaseOperatorBuilder struct {
 	apiVersion    string
 	customCommand string
 	finalized     bool
+	crdsPrepared  bool
 }
 
 type BaseOperator struct {
@@ -60,6 +61,7 @@ type BaseOperator struct {
 	cRoleBinding      rbacv1.ClusterRoleBinding
 	crds              []apiextv1b1.CustomResourceDefinition
 	keepCRD           bool
+	crdsPrepared      bool
 }
 
 type DefinitionStruct struct {
@@ -141,6 +143,18 @@ func (b *BaseOperatorBuilder) WithOperatorName(name string) OperatorSetupBuilder
 func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) OperatorSetupBuilder {
 	if !b.finalized {
 		b.keepCdrs = keepCdrs
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
+}
+
+// When CRDs are already created on the cluster in question, we don't need to do anything with them.
+func (b *BaseOperatorBuilder) CRDsPrepared() OperatorSetupBuilder {
+	if !b.finalized {
+		b.crdsPrepared = true
+		// If they are pre-defined, we don't need to clean them up either
+		b.keepCdrs = true
 		return b
 	} else {
 		panic(fmt.Errorf("can't edit operator builder post-finalization"))
@@ -299,15 +313,19 @@ func (b *BaseOperator) setupClusterRoleBinding(jsonObj []byte) {
 }
 
 func (b *BaseOperator) setupCRD(jsonObj []byte) {
-	log.Logf("Setting up CRD")
-	var CRD apiextv1b1.CustomResourceDefinition
-	if err := json.Unmarshal(jsonObj, &CRD); err != nil {
-		b.errorItemLoad("CRD", jsonObj, err)
+	if !b.crdsPrepared {
+		log.Logf("Setting up CRD")
+		var CRD apiextv1b1.CustomResourceDefinition
+		if err := json.Unmarshal(jsonObj, &CRD); err != nil {
+			b.errorItemLoad("CRD", jsonObj, err)
+		}
+		if _, err := b.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&CRD); err != nil {
+			b.errorItemCreate("CRD", err)
+		}
+		b.crds = append(b.crds, CRD)
+	} else {
+		log.Logf("not setting up CRDs due to configuration flag")
 	}
-	if _, err := b.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&CRD); err != nil {
-		b.errorItemCreate("CRD", err)
-	}
-	b.crds = append(b.crds, CRD)
 }
 
 func (b *BaseOperator) setupYamlsFromUrls() error {
