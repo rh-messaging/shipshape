@@ -14,6 +14,8 @@ type OperatorSetupBuilder interface {
 	AddYamlURL(yaml string) OperatorSetupBuilder
 	WithOperatorName(name string) OperatorSetupBuilder
 	KeepCdr(keepCdrs bool) OperatorSetupBuilder
+	SetAdminUnavailable() OperatorSetupBuilder
+	SetOperatorName(operatorName string) OperatorSetupBuilder
 	WithApiVersion(apiVersion string) OperatorSetupBuilder
 	WithYamls(yamls [][]byte) OperatorSetupBuilder
 	Build() (OperatorSetup, error)

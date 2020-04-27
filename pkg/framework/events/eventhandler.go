@@ -63,9 +63,15 @@ func (eh *EventHandler) ClearCallbacks() {
 }
 
 func (eh *EventHandler) AddEventHandler(emitter Emitter, eventType EventType, callback Callback) {
-	localMap := make(map[EventType]Callback)
-	localMap[eventType] = callback
-	eh.callbacks[emitter] = localMap
+	if eh.callbacks != nil {
+		localMap := make(map[EventType]Callback)
+		localMap[eventType] = callback
+		eh.callbacks[emitter] = localMap
+	} else {
+		eh.callbacks = make(map[Emitter]map[EventType]Callback)
+		eh.AddEventHandler(emitter, eventType, callback)
+	}
+
 }
 
 func (eh *EventHandler) handlePodDeleteEvent(obj interface{}) {

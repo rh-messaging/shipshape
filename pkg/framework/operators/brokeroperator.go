@@ -64,9 +64,7 @@ func (b *BrokerOperator) Setup() error {
 	if err := b.SetupYamls(); err != nil {
 		return err
 	}
-
 	return nil
-
 }
 
 func (b *BrokerOperator) TeardownEach() error {
