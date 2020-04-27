@@ -150,7 +150,7 @@ func (b *BaseOperatorBuilder) KeepCdr(keepCdrs bool) OperatorSetupBuilder {
 }
 
 // When CRDs are already created on the cluster in question, we don't need to do anything with them.
-func (b *BaseOperatorBuilder) CRDsPrepared() OperatorSetupBuilder {
+func (b *BaseOperatorBuilder) SetAdminUnavailable() OperatorSetupBuilder {
 	if !b.finalized {
 		b.crdsPrepared = true
 		// If they are pre-defined, we don't need to clean them up either
@@ -168,6 +168,12 @@ func (b *BaseOperatorBuilder) WithApiVersion(apiVersion string) OperatorSetupBui
 	} else {
 		panic(fmt.Errorf("can't edit operator builder post-finalization"))
 	}
+}
+
+// Allows for custom named operators to exist
+func (b *BaseOperatorBuilder) SetOperatorName(operatorName string) OperatorSetupBuilder {
+	b.operatorName = operatorName
+	return b
 }
 
 func (b *BaseOperatorBuilder) Finalize() *BaseOperatorBuilder {
