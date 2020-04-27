@@ -42,6 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rh-messaging/activemq-artemis-operator v0.0.0-20200129215629-091fc37491be
 	github.com/rogpeppe/go-charset v0.0.0-20190617161244-0dc95cdf6f31 // indirect
+	github.com/therecipe/qt v0.0.0-20200126204426-5074eb6d8c41 // indirect
 	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/crypto v0.0.0-20200115085410-6d4e4cb37c7d // indirect
 	golang.org/x/exp v0.0.0-20191227195350-da58074b4299 // indirect
