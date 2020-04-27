@@ -18,7 +18,7 @@ var (
 		}},
 		OperatorTypeBroker: &BrokerOperatorBuilder{BaseOperatorBuilder{
 			image:        "quay.io/artemiscloud/activemq-artemis-operator:latest", //or  registry.redhat.io/amq7/amq-broker-rhel7-operator
-			operatorName: "amq-broker-operator",
+			operatorName: "activemq-artemis-operator",
 			keepCdrs:     true,
 			apiVersion:   "v1alpha1",
 		}},
