@@ -8,7 +8,7 @@ import (
 
 type AmqpQEReceiverBuilder struct {
 	*AmqpQEClientBuilderCommon
-	receiver         *AmqpQEClientCommon
+	receiver *AmqpQEClientCommon
 }
 
 func NewReceiverBuilder(name string, impl AmqpQEClientImpl, data framework.ContextData, url string) *AmqpQEReceiverBuilder {
@@ -30,6 +30,11 @@ func NewReceiverBuilder(name string, impl AmqpQEClientImpl, data framework.Conte
 
 func (a *AmqpQEReceiverBuilder) Timeout(timeout int) *AmqpQEReceiverBuilder {
 	a.receiver.Timeout = timeout
+	return a
+}
+
+func (a *AmqpQEReceiverBuilder) WithCount(count int) *AmqpQEReceiverBuilder {
+	a.MessageCount = count
 	return a
 }
 
