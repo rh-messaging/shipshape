@@ -174,7 +174,7 @@ func (c *ContextData) GetPodName(label string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if podList.Size() == 0 {
+	if len(podList.Items) == 0 {
 		return "", fmt.Errorf("no pod with label %s found", label)
 	} else if len(podList.Items) > 1 {
 		for _, pod := range podList.Items {
