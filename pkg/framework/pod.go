@@ -6,7 +6,9 @@ package framework
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"io"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,8 +129,8 @@ func (cb *ContainerBuilder) EnvVar(variable, value string) *ContainerBuilder {
 		cb.c.Env = []v1.EnvVar{}
 	}
 	cb.c.Env = append(cb.c.Env, v1.EnvVar{
-		Name:      variable,
-		Value:     value,
+		Name:  variable,
+		Value: value,
 	})
 	return cb
 }
@@ -163,6 +165,24 @@ func (cb *ContainerBuilder) AddVolumeMountConfigMapData(volumeName string, mount
 // Build returns the prepared Container to be used within a Pod
 func (cb *ContainerBuilder) Build() v1.Container {
 	return cb.c
+}
+
+func (c *ContextData) GetPodName(label string) (string, error) {
+	podListOpts := metav1.ListOptions{}
+	podListOpts.LabelSelector = "name=" + label
+	podList, err := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(podListOpts)
+	if err != nil {
+		return "", err
+	}
+	if podList.Size() == 0 {
+		return "", fmt.Errorf("no pod with label %s found", label)
+	} else if len(podList.Items) > 1 {
+		for _, pod := range podList.Items {
+			log.Logf("Contains %s", pod.Name)
+		}
+		return "", fmt.Errorf("too many pods with label %s found", label)
+	}
+	return podList.Items[0].Name, nil
 }
 
 //returns whole pod log as a (meaty) string
@@ -226,4 +246,3 @@ func Execute(ctx1 *ContextData, command string, arguments string, podname string
 	}
 	return buf.String(), errBuf.String(), nil
 }
-
