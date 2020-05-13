@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"github.com/ghodss/yaml"
 	"io/ioutil"
+	 "github.com/rh-messaging/shipshape/pkg/framework/log"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextv1b1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	clientset "k8s.io/client-go/kubernetes"
-
-	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"net/http"
@@ -201,6 +200,7 @@ func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator.yamls = b.yamls
 	baseOperator.keepCRD = b.keepCdrs
 	baseOperator.customCommand = b.customCommand
+	baseOperator.crdsPrepared = b.crdsPrepared
 	if err := baseOperator.Setup(); err != nil {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
 	}
@@ -215,6 +215,7 @@ func (b *BaseOperator) InitFromBaseOperatorBuilder(builder *BaseOperatorBuilder)
 	b.operatorName = builder.operatorName
 	b.yamls = builder.yamls
 	b.keepCRD = builder.keepCdrs
+	b.crdsPrepared = builder.crdsPrepared
 
 	// Initialize clients
 	if kubeClient, err := clientset.NewForConfig(b.restConfig); err != nil {
@@ -446,7 +447,6 @@ func (b *BaseOperator) APIVersion() string {
 }
 
 func (b *BaseOperator) Setup() error {
-	log.Logf("setting up yamls: %v", b.yamls)
 	if err := b.SetupYamls(); err != nil {
 		return err
 	}
