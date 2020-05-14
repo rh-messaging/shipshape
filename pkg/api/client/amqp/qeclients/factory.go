@@ -47,7 +47,7 @@ type AmqpQEClientImplInfo struct {
 	CommandReceiver string
 }
 
-func (a *AmqpQESenderBuilder) WithCustomCommand(command string) *AmqpQESenderBuilder {
+func (a *AmqpQEClientBuilderCommon) WithCustomCommand(command string) *AmqpQEClientBuilderCommon {
 	a.customCommand = command
 	return a
 }
