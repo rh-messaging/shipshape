@@ -52,8 +52,11 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 		image = a.customImage
 	}
 	cBuilder := framework.NewContainerBuilder(a.receiver.Name, image)
-	cBuilder.WithCommands(QEClientImageMap[a.receiver.Implementation].CommandReceiver)
-
+	if a.customCommand == "" {
+		cBuilder.WithCommands(QEClientImageMap[a.receiver.Implementation].CommandSender)
+	} else {
+		cBuilder.WithCommands(a.customCommand)
+	}
 	//
 	// Adds args (may vary from one implementation to another)
 	//

@@ -79,8 +79,13 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	if a.customImage != "" {
 		image = a.customImage
 	}
+
 	cBuilder := framework.NewContainerBuilder(a.sender.Name, image)
-	cBuilder.WithCommands(QEClientImageMap[a.sender.Implementation].CommandSender)
+	if a.customCommand == "" {
+		cBuilder.WithCommands(QEClientImageMap[a.sender.Implementation].CommandSender)
+	} else {
+		cBuilder.WithCommands(a.customCommand)
+	}
 
 	//
 	// Adds args (may vary from one implementation to another)
@@ -113,7 +118,9 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 
 	// Static options
 	cBuilder.AddArgs("--log-msgs", "json")
-	cBuilder.AddArgs("--on-release", "retry")
+	if a.customCommand == "" || a.customCommand == "cli-qpid-sender" {
+		cBuilder.AddArgs("--on-release", "retry")
+	}
 
 	// Retrieving container and adding to pod
 	c := cBuilder.Build()

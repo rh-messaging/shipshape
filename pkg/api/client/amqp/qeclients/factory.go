@@ -47,11 +47,16 @@ type AmqpQEClientImplInfo struct {
 	CommandReceiver string
 }
 
+func (a *AmqpQEClientBuilderCommon) WithCustomCommand(command string) *AmqpQEClientBuilderCommon {
+	a.customCommand = command
+	return a
+}
+
 // Common builder properties and methods to be reused by sender/receiver builders
 type AmqpQEClientBuilderCommon struct {
-	customImage string
-
-	MessageCount int
+	customImage   string
+	customCommand string
+	MessageCount  int
 }
 
 func (a *AmqpQEClientBuilderCommon) Messages(count int) *AmqpQEClientBuilderCommon {
