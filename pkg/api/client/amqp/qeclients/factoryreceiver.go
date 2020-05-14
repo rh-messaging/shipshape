@@ -38,6 +38,11 @@ func (a *AmqpQEReceiverBuilder) WithCount(count int) *AmqpQEReceiverBuilder {
 	return a
 }
 
+func (a *AmqpQEReceiverBuilder) WithCustomCommand(command string) *AmqpQEReceiverBuilder {
+	a.customCommand = command
+	return a
+}
+
 func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args) and etc
 	podBuilder := framework.NewPodBuilder(a.receiver.Name, a.receiver.Context.Namespace)
@@ -52,8 +57,11 @@ func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 		image = a.customImage
 	}
 	cBuilder := framework.NewContainerBuilder(a.receiver.Name, image)
-	cBuilder.WithCommands(QEClientImageMap[a.receiver.Implementation].CommandReceiver)
-
+	if a.customCommand == "" {
+		cBuilder.WithCommands(QEClientImageMap[a.receiver.Implementation].CommandSender)
+	} else {
+		cBuilder.WithCommands(a.customCommand)
+	}
 	//
 	// Adds args (may vary from one implementation to another)
 	//

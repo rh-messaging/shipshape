@@ -58,6 +58,11 @@ func (a *AmqpQESenderBuilder) MessageContentFromFile(configMapName string, filen
 	return a
 }
 
+func (a *AmqpQESenderBuilder) WithCustomCommand(command string) *AmqpQESenderBuilder {
+	a.customCommand = command
+	return a
+}
+
 func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args), Volumes and etc
 	podBuilder := framework.NewPodBuilder(a.sender.Name, a.sender.Context.Namespace)
@@ -79,8 +84,13 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	if a.customImage != "" {
 		image = a.customImage
 	}
+
 	cBuilder := framework.NewContainerBuilder(a.sender.Name, image)
-	cBuilder.WithCommands(QEClientImageMap[a.sender.Implementation].CommandSender)
+	if a.customCommand == "" {
+		cBuilder.WithCommands(QEClientImageMap[a.sender.Implementation].CommandSender)
+	} else {
+		cBuilder.WithCommands(a.customCommand)
+	}
 
 	//
 	// Adds args (may vary from one implementation to another)
