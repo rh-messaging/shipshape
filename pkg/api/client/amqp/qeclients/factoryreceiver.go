@@ -38,11 +38,6 @@ func (a *AmqpQEReceiverBuilder) WithCount(count int) *AmqpQEReceiverBuilder {
 	return a
 }
 
-func (a *AmqpQEReceiverBuilder) WithCustomCommand(command string) *AmqpQEReceiverBuilder {
-	a.customCommand = command
-	return a
-}
-
 func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args) and etc
 	podBuilder := framework.NewPodBuilder(a.receiver.Name, a.receiver.Context.Namespace)

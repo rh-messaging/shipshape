@@ -58,11 +58,6 @@ func (a *AmqpQESenderBuilder) MessageContentFromFile(configMapName string, filen
 	return a
 }
 
-func (a *AmqpQESenderBuilder) WithCustomCommand(command string) *AmqpQESenderBuilder {
-	a.customCommand = command
-	return a
-}
-
 func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args), Volumes and etc
 	podBuilder := framework.NewPodBuilder(a.sender.Name, a.sender.Context.Namespace)
@@ -123,7 +118,9 @@ func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 
 	// Static options
 	cBuilder.AddArgs("--log-msgs", "json")
-	cBuilder.AddArgs("--on-release", "retry")
+	if a.customCommand == "" || a.customCommand == "cli-qpid-sender" {
+		cBuilder.AddArgs("--on-release", "retry")
+	}
 
 	// Retrieving container and adding to pod
 	c := cBuilder.Build()
