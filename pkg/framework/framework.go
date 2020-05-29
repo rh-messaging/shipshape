@@ -27,7 +27,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	networkv1 "github.com/openshift/client-go/network/clientset/versioned"
 	routev1 "github.com/openshift/client-go/route/clientset/versioned"
+
 	e2elog "github.com/rh-messaging/shipshape/pkg/framework/log"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
@@ -55,7 +57,8 @@ type ClientSet struct {
 }
 
 type ocpClient struct {
-	RoutesClient *routev1.Clientset
+	RoutesClient  *routev1.Clientset
+	NetworkClient *networkv1.Clientset
 }
 
 func contains(target operators.OperatorType, collection []operators.OperatorType) bool {
@@ -239,6 +242,9 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		// OpenShift specific initialization
 		if ctx.IsOpenShift() {
 			ctx.Clients.OcpClient.RoutesClient, err = routev1.NewForConfig(restConfig)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+			ctx.Clients.OcpClient.NetworkClient, err = networkv1.NewForConfig(restConfig)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		}
 
