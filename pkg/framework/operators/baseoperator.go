@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ghodss/yaml"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	"github.com/rh-messaging/shipshape/pkg/framework/util"
 	"io/ioutil"
-	 "github.com/rh-messaging/shipshape/pkg/framework/log"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -283,6 +284,9 @@ func (b *BaseOperator) setupRole(jsonObj []byte) {
 	if err := json.Unmarshal(jsonObj, &b.role); err != nil {
 		b.errorItemLoad("role", jsonObj, err)
 	}
+	for _, item := range b.role.Rules {
+		log.Logf("Rule concerning %v is being created", item.Resources)
+	}
 	if _, err := b.kubeClient.RbacV1().Roles(b.namespace).Create(&b.role); err != nil {
 		b.errorItemCreate("role", err)
 	}
@@ -304,6 +308,7 @@ func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 	if err := json.Unmarshal(jsonObj, &b.roleBinding); err != nil {
 		b.errorItemLoad("role binding", jsonObj, err)
 	}
+	b.roleBinding.Name = "rolebinding-" + util.String(8) //silly.
 	if _, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(&b.roleBinding); err != nil {
 		b.errorItemCreate("role binding", err)
 	}
