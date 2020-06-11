@@ -16,7 +16,9 @@ package framework
 
 import (
 	"fmt"
+	projectv1 "github.com/openshift/client-go/project/clientset/versioned"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	"github.com/rh-messaging/shipshape/pkg/framework/util"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +31,7 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
+	openapiv1 "github.com/openshift/api/project/v1"
 )
 
 const (
@@ -36,6 +39,32 @@ const (
 	namespaceNamePrefix     = "operator-e2e-"
 	NamespaceCleanupTimeout = 2 * time.Minute
 )
+
+//
+func createTestProject(client projectv1.Interface, name string, labels map[string]string) *openapiv1.Project {
+	ginkgo.By(fmt.Sprintf("Creating a project named %s to execute the tests in", name))
+	return createProject(client, name, labels)
+}
+
+func createProject(client projectv1.Interface, name string, labels map[string]string) *openapiv1.Project {
+	projectObj := &openapiv1.Project{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+	}
+
+	project, err := client.ProjectV1().Projects().Create(projectObj)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Error creating project %v", project)
+	return project
+}
+
+func (c *ContextData) CreateProject(clientSet *projectv1.Clientset,
+	baseName string, labels map[string]string) *openapiv1.Project {
+	ns := createTestProject(clientSet, baseName, labels)
+	c.AddProjectsToDelete(ns)
+	return ns
+}
 
 func createTestNamespace(client clientset.Interface, name string, labels map[string]string) *corev1.Namespace {
 	ginkgo.By(fmt.Sprintf("Creating a namespace %s to execute the test in", name))
@@ -65,6 +94,15 @@ func (c *ContextData) CreateNamespace(clientSet *clientset.Clientset,
 	return ns
 }
 
+func (c *ContextData) AddProjectsToDelete(projects ...*openapiv1.Project) {
+	for _, proj := range projects {
+		if proj == nil {
+			continue
+		}
+		c.projectsToDelete = append(c.projectsToDelete, proj)
+	}
+}
+
 func (c *ContextData) AddNamespacesToDelete(namespaces ...*corev1.Namespace) {
 	for _, ns := range namespaces {
 		if ns == nil {
@@ -72,6 +110,19 @@ func (c *ContextData) AddNamespacesToDelete(namespaces ...*corev1.Namespace) {
 		}
 		c.namespacesToDelete = append(c.namespacesToDelete, ns)
 	}
+}
+
+func generateProject(client projectv1.Interface, baseName string, labels map[string]string) *openapiv1.Project {
+	projectObj := &openapiv1.ProjectRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: fmt.Sprintf("e2e-tests-%v-%v", baseName, util.String(8)),
+			Labels:       labels,
+		},
+	}
+
+	project, err := client.ProjectV1().ProjectRequests().Create(projectObj)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Error generating project %v", projectObj)
+	return project
 }
 
 func generateNamespace(client clientset.Interface, baseName string, labels map[string]string) *corev1.Namespace {
@@ -96,6 +147,14 @@ func (c *ContextData) GenerateNamespace() (*corev1.Namespace, error) {
 	})
 }
 
+func (c *ContextData) GenerateProject() (*openapiv1.Project, error) {
+	return c.Clients.OcpClient.ProjectsClient.ProjectV1().Projects().Create(&openapiv1.Project{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: namespaceNamePrefix,
+		},
+	})
+}
+
 func deleteNamespace(client clientset.Interface, namespaceName string) error {
 
 	if !TestContext.DeleteNamespace {
@@ -107,6 +166,32 @@ func deleteNamespace(client clientset.Interface, namespaceName string) error {
 		namespaceName,
 		&metav1.DeleteOptions{})
 
+}
+
+func deleteProject(client projectv1.Interface, projectName string) error {
+	if !TestContext.DeleteNamespace {
+		log.Logf("Skipping removal as projects are meant to be preserved")
+		return nil
+	}
+	return client.ProjectV1().Projects().Delete(projectName, &metav1.DeleteOptions{})
+}
+
+func (c *ContextData) DeleteProject(prj *openapiv1.Project) []error {
+	var errors []error
+
+	if err := deleteProject(c.Clients.OcpClient.ProjectsClient, prj.Name); err != nil {
+		switch {
+		case apierrors.IsNotFound(err):
+			log.Logf("Namespace was already deleted")
+		case apierrors.IsConflict(err):
+			log.Logf("Namespace scheduled for deletion, resources being purged")
+		default:
+			log.Logf("Failed deleting namespace")
+			errors = append(errors, err)
+		}
+	}
+
+	return errors
 }
 
 func (c *ContextData) DeleteNamespace(ns *corev1.Namespace) []error {

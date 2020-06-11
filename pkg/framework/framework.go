@@ -28,8 +28,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	networkv1 "github.com/openshift/client-go/network/clientset/versioned"
+	projectv1 "github.com/openshift/client-go/project/clientset/versioned"
 	routev1 "github.com/openshift/client-go/route/clientset/versioned"
 
+	openapiv1 "github.com/openshift/api/project/v1"
 	e2elog "github.com/rh-messaging/shipshape/pkg/framework/log"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
@@ -57,8 +59,9 @@ type ClientSet struct {
 }
 
 type ocpClient struct {
-	RoutesClient  *routev1.Clientset
-	NetworkClient *networkv1.Clientset
+	RoutesClient   *routev1.Clientset
+	NetworkClient  *networkv1.Clientset
+	ProjectsClient *projectv1.Clientset
 }
 
 func contains(target operators.OperatorType, collection []operators.OperatorType) bool {
@@ -77,6 +80,7 @@ type ContextData struct {
 	Clients            ClientSet
 	Namespace          string
 	namespacesToDelete []*corev1.Namespace // Some tests have more than one
+	projectsToDelete   []*openapiv1.Project
 	// Set together with creating the ClientSet and the namespace.
 	// Guaranteed to be unique in the cluster even when running the same
 	// test multiple times in parallel.
@@ -91,8 +95,8 @@ type Framework struct {
 	BaseName string
 
 	// Map that ties clients and namespaces for each available context
-	ContextMap map[string]*ContextData
-
+	ContextMap            map[string]*ContextData
+	IsOpenshift           bool // Namespace/Project
 	SkipNamespaceCreation bool // Whether to skip creating a namespace
 	cleanupHandleEach     CleanupActionHandle
 	cleanupHandleSuite    CleanupActionHandle
@@ -102,8 +106,9 @@ type Framework struct {
 
 // Framework Builder type
 type Builder struct {
-	f        *Framework
-	contexts []string
+	f           *Framework
+	contexts    []string
+	isOpenshift bool
 }
 
 // Helper for building frameworks with possible customizations
@@ -118,8 +123,15 @@ func NewFrameworkBuilder(baseName string) Builder {
 			BaseName:   baseName,
 			ContextMap: make(map[string]*ContextData),
 		},
-		contexts: []string{TestContext.GetContexts()[0]},
+		contexts:    []string{TestContext.GetContexts()[0]},
+		isOpenshift: false,
 	}
+	return b
+}
+
+// Sets if the framework would create namespaces or projects
+func (b Builder) IsOpenshift(isIt bool) Builder {
+	b.isOpenshift = isIt
 	return b
 }
 
@@ -140,6 +152,7 @@ func (b Builder) WithBuilders(builders ...operators.OperatorSetupBuilder) Builde
 // Generates and initialize the Framework
 func (b Builder) Build() *Framework {
 	// Initialize restConfig and kube clients for each provided context
+	b.f.IsOpenshift = b.isOpenshift
 	b.f.BeforeEach(b.contexts...)
 	return b.f
 }
@@ -201,6 +214,9 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		dynClient, err := dynamic.NewForConfig(restConfig)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
+		projectClient, err := projectv1.NewForConfig(restConfig)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
 		// Initilizing the ClientSet for context
 		clients = ClientSet{
 			KubeClient: kubeClient,
@@ -212,13 +228,28 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		ginkgo.By(fmt.Sprintf("Building namespace api objects, basename %s", f.BaseName))
 		// Keep original label for now (maybe we can remove or rename later)
 		var namespace *corev1.Namespace
+		var project *openapiv1.Project
 		if !f.SkipNamespaceCreation {
-			namespace = generateNamespace(kubeClient, f.BaseName, namespaceLabels)
+			if !f.IsOpenshift {
+				log.Logf("Setting up namespace")
+				namespace = generateNamespace(kubeClient, f.BaseName, namespaceLabels)
+			} else {
+				log.Logf("Setting up project")
+				project = generateProject(projectClient, f.BaseName, namespaceLabels)
+			}
 		} else {
 			tempCtx := rawConfig.Contexts[context]
-			namespace, err = kubeClient.CoreV1().Namespaces().Get(tempCtx.Namespace, metav1.GetOptions{})
+			if !f.IsOpenshift {
+				namespace, err = kubeClient.CoreV1().Namespaces().Get(tempCtx.Namespace, metav1.GetOptions{})
+			} else {
+				project, err = projectClient.ProjectV1().Projects().Get(tempCtx.Namespace, metav1.GetOptions{})
+			}
 		}
-		gomega.Expect(namespace).NotTo(gomega.BeNil())
+		if !f.IsOpenshift {
+			gomega.Expect(namespace).NotTo(gomega.BeNil())
+		} else {
+			gomega.Expect(project).NotTo(gomega.BeNil())
+		}
 
 		// Verify if Cert Manager is installed
 		_, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("issuers.certmanager.k8s.io", metav1.GetOptions{})
@@ -230,10 +261,16 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 
 		// Initializing the context
+		var name string
+		if !f.IsOpenshift {
+			name = namespace.GetName()
+		} else {
+			name = project.GetName()
+		}
 		ctx := &ContextData{
 			Id:                 context,
-			Namespace:          namespace.GetName(),
-			UniqueName:         namespace.GetName(),
+			Namespace:          name,
+			UniqueName:         name,
 			Clients:            clients,
 			CertManagerPresent: certManagerPresent,
 		}
@@ -246,6 +283,10 @@ func (f *Framework) BeforeEach(contexts ...string) {
 
 			ctx.Clients.OcpClient.NetworkClient, err = networkv1.NewForConfig(restConfig)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+			ctx.Clients.OcpClient.ProjectsClient, err = projectv1.NewForConfig(restConfig)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			ctx.projectsToDelete = append(ctx.projectsToDelete, project)
 		}
 
 		// Initializing needed operators on given context
@@ -260,7 +301,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 		for _, builder := range f.builders {
 			builder.NewBuilder(restConfig, &rawConfig)
-			builder.WithNamespace(namespace.GetName())
+			builder.WithNamespace(name)
 			operator, err := builder.Build()
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			ctx.OperatorMap[builder.OperatorType()] = operator
@@ -270,7 +311,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			ctx.AddNamespacesToDelete(namespace)
 		}
 
-		options := kubeinformers.WithNamespace(namespace.GetName())
+		options := kubeinformers.WithNamespace(name)
 		informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, time.Second*30, options)
 		ctx.EventHandler = events.EventHandler{}
 		ctx.EventHandler.CreateEventInformers(informerFactory)
@@ -301,15 +342,24 @@ func (f *Framework) AfterEach() {
 	// DeleteNamespace at the very end in defer, to avoid any
 	// expectation failures preventing deleting the namespace.
 	defer func() {
-		nsDeletionErrors := map[string][]error{}
+		deleteionErrors := map[string][]error{}
 		// Whether to delete namespace is determined by 3 factors: delete-namespace flag, delete-namespace-on-failure flag and the test result
 		// if delete-namespace set to false, namespace will always be preserved.
 		// if delete-namespace is true and delete-namespace-on-failure is false, namespace will be preserved if test failed.
 		for _, contextData := range f.ContextMap {
-			for _, ns := range contextData.namespacesToDelete {
-				ginkgo.By(fmt.Sprintf("Destroying namespace %q for this suite on all clusters.", ns.Name))
-				if errors := contextData.DeleteNamespace(ns); errors != nil {
-					nsDeletionErrors[ns.Name] = errors
+			if !f.IsOpenshift {
+				for _, ns := range contextData.namespacesToDelete {
+					ginkgo.By(fmt.Sprintf("Destroying namespace %q for this suite on all clusters.", ns.Name))
+					if errors := contextData.DeleteNamespace(ns); errors != nil {
+						deleteionErrors[ns.Name] = errors
+					}
+				}
+			} else {
+				for _, project := range contextData.projectsToDelete {
+					ginkgo.By(fmt.Sprintf("Destroying project %s for this suite on all clusters", project.Name))
+					if errors := contextData.DeleteProject(project); errors != nil {
+						deleteionErrors[project.Name] = errors
+					}
 				}
 			}
 
@@ -317,12 +367,13 @@ func (f *Framework) AfterEach() {
 			contextData.Namespace = ""
 			contextData.Clients.KubeClient = nil
 			contextData.namespacesToDelete = nil
+			contextData.projectsToDelete = nil
 		}
 
 		// if we had errors deleting, report them now.
-		if len(nsDeletionErrors) != 0 {
+		if len(deleteionErrors) != 0 {
 			messages := []string{}
-			for namespaceKey, namespaceErrors := range nsDeletionErrors {
+			for namespaceKey, namespaceErrors := range deleteionErrors {
 				for clusterIdx, namespaceErr := range namespaceErrors {
 					messages = append(messages, fmt.Sprintf("Couldn't delete ns: %q (@cluster %d): %s (%#v)",
 						namespaceKey, clusterIdx, namespaceErr, namespaceErr))
