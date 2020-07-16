@@ -35,6 +35,7 @@ type BaseOperatorBuilder struct {
 	customCommand string
 	finalized     bool
 	crdsPrepared  bool
+	envVariables	map[string]string
 }
 
 type BaseOperator struct {
@@ -62,6 +63,7 @@ type BaseOperator struct {
 	crds              []apiextv1b1.CustomResourceDefinition
 	keepCRD           bool
 	crdsPrepared      bool
+	envVariables	map[string]string
 }
 
 type DefinitionStruct struct {
@@ -74,6 +76,11 @@ type DefinitionStruct struct {
 func (b *BaseOperatorBuilder) NewBuilder(restConfig *rest.Config, rawConfig *clientcmdapi.Config) OperatorSetupBuilder {
 	b.restConfig = restConfig
 	b.rawConfig = rawConfig
+	return b
+}
+
+func (b *BaseOperatorBuilder) AddEnvVariable(name string, value string) OperatorSetupBuilder {
+	b.envVariables[name] = value
 	return b
 }
 
@@ -202,11 +209,14 @@ func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator.keepCRD = b.keepCdrs
 	baseOperator.customCommand = b.customCommand
 	baseOperator.crdsPrepared = b.crdsPrepared
+	baseOperator.envVariables = b.envVariables
 	if err := baseOperator.Setup(); err != nil {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
 	}
 	return baseOperator, nil
 }
+
+
 
 func (b *BaseOperator) InitFromBaseOperatorBuilder(builder *BaseOperatorBuilder) error {
 	b.restConfig = builder.restConfig
@@ -418,10 +428,23 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 	if b.customCommand != "" {
 		b.deploymentConfig.Spec.Template.Spec.Containers[0].Command = []string{b.customCommand}
 	}
+	if len(b.envVariables)>0 {
+		for name, value := range  b.envVariables {
+			envVar := corev1.EnvVar{name, value,nil}
+			b.deploymentConfig.
+				Spec.
+				Template.
+				Spec.
+				Containers[0].
+				Env = append(b.deploymentConfig.Spec.Template.Spec.Containers[0].Env, envVar)
+		}
+	}
+
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
 }
+
 
 func (b *BaseOperator) Namespace() string {
 	return b.namespace
@@ -511,3 +534,4 @@ func (b *BaseOperator) TeardownSuite() error {
 		return nil
 	}
 }
+
