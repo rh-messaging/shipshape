@@ -27,7 +27,7 @@ var (
 		},
 		JavaIBMZ: {
 			Name:            "cli-qpid-java",
-			Image:           "quay.io/kcrane/cli-java",
+			Image:           "quay.io/lzhan/cli-java",
 			CommandSender:   "cli-qpid-sender",
 			CommandReceiver: "cli-qpid-receiver",
 		},
