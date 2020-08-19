@@ -8,6 +8,7 @@ const (
 	Java
 	NodeJS
 	JavaIBMZ
+	JavaPPC
 	Timeout int = 60
 )
 
@@ -28,6 +29,12 @@ var (
 		JavaIBMZ: {
 			Name:            "cli-qpid-java",
 			Image:           "quay.io/lzhan/cli-java",
+			CommandSender:   "cli-qpid-sender",
+			CommandReceiver: "cli-qpid-receiver",
+		},
+		JavaPPC: {
+			Name:            "cli-qpid-java",
+			Image:           "quay.io/redmark/cli-java",
 			CommandSender:   "cli-qpid-sender",
 			CommandReceiver: "cli-qpid-receiver",
 		},
