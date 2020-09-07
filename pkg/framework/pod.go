@@ -219,7 +219,7 @@ func (c *ContextData) WaitForPodStatus(podName string, status v1.PodPhase, timeo
 	return pod, err
 }
 
-func Execute(ctx1 *ContextData, command string, arguments string, podname string) (string, string, error) {
+func Execute(ctx1 *ContextData, command string, arguments []string, podname string) (string, string, error) {
 	pod, err := ctx1.Clients.KubeClient.CoreV1().Pods(ctx1.Namespace).Get(podname, metav1.GetOptions{})
 	request := ctx1.Clients.KubeClient.CoreV1().RESTClient().
 		Post().
@@ -228,7 +228,7 @@ func Execute(ctx1 *ContextData, command string, arguments string, podname string
 		Name(pod.Name).
 		SubResource("exec").
 		VersionedParams(&v1.PodExecOptions{
-			Command: []string{command, arguments},
+			Command: append([]string{command}, arguments...),
 			Stdin:   true,
 			Stdout:  true,
 			Stderr:  true,
