@@ -418,6 +418,10 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 	if b.customCommand != "" {
 		b.deploymentConfig.Spec.Template.Spec.Containers[0].Command = []string{b.customCommand}
 	}
+	if b.operatorName != "" {
+		//b.deploymentConfig.Spec.Template.Spec.Containers[0].Name = b.operatorName
+		b.deploymentConfig.ObjectMeta.Name = b.operatorName
+	}
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
