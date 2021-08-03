@@ -67,3 +67,5 @@ require (
 )
 
 go 1.13
+
+replace bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
