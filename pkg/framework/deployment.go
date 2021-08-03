@@ -53,11 +53,7 @@ func (c *ContextData) ListPodsForDeployment(deployment *appsv1.Deployment) (*cor
 	return c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(listOps)
 }
 
-func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error { // I'd deprecate this method but it might be used in tests etc.
-	return WaitForStatefulSetReady(kubeclient, namespace, name, count, retryInterval, timeout)
-}
-
-func WaitForStatefulSetReady(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error {
+func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		ds, err := kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {

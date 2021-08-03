@@ -102,7 +102,7 @@ type Framework struct {
 	cleanupHandleSuite    CleanupActionHandle
 	afterEachDone         bool
 	builders              []operators.OperatorSetupBuilder
-	globalOperatorFlag    bool
+	globalOperator        bool
 	globalBaseName        string
 	globalGeneratedName   string
 }
@@ -166,7 +166,7 @@ func (b Builder) WithBuilders(builders ...operators.OperatorSetupBuilder) Builde
 func (b Builder) Build() *Framework {
 	// Initialize restConfig and kube clients for each provided context
 	b.f.IsOpenshift = b.isOpenshift
-	b.f.globalOperatorFlag = b.globalOperator
+	b.f.globalOperator = b.globalOperator
 	b.f.BeforeEach(b.contexts...)
 	return b.f
 }
@@ -174,6 +174,56 @@ func (b Builder) Build() *Framework {
 // Defines a custom set of builders for the given Framework instance
 func (f *Framework) SetOperatorBuilders(builders ...operators.OperatorSetupBuilder) {
 	f.builders = builders
+}
+
+func (f *Framework) BeforeSuite(contexts ...string) {
+	//create namespace for global operator
+	if f.globalOperator {
+		config, err := clientcmd.LoadFromFile(TestContext.KubeConfig)
+		if err != nil {
+			log.Logf("Can't load config from file %s: %s", TestContext.KubeConfig, err.Error)
+		}
+		if contexts == nil {
+			log.Logf("No contexts found")
+		}
+		for _, context := range contexts {
+			config.CurrentContext = context
+
+			log.Logf("Using global operator")
+			f.globalBaseName = "global-operator"
+			namespaceLabels := map[string]string{
+				"global-operator": f.globalBaseName,
+			}
+			log.Logf("kube: %s", f.GetFirstContext().Clients.KubeClient)
+			namespace := generateNamespace(f.GetFirstContext().Clients.KubeClient, f.globalBaseName, namespaceLabels)
+			f.globalGeneratedName = namespace.GetName()
+			bytes, err := clientcmd.Write(*config)
+			if err != nil {
+				ginkgo.Fail(fmt.Sprintf("Unable to serialize config %s - %s", TestContext.KubeConfig, err))
+			}
+			clientConfig, err := clientcmd.NewClientConfigFromBytes(bytes)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			restConfig, err := clientConfig.ClientConfig()
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			rawConfig, err := clientConfig.RawConfig()
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			f.GetFirstContext().OperatorMap = map[operators.OperatorType]operators.OperatorSetup{}
+			for _, builder := range f.builders {
+				builder.NewBuilder(restConfig, &rawConfig)
+				builder.WithNamespace(f.globalGeneratedName)
+				operator, err := builder.Build()
+				gomega.Expect(err).NotTo(gomega.HaveOccurred())
+				f.GetFirstContext().OperatorMap[builder.OperatorType()] = operator
+				log.Logf("Operator %s deployed to %s", operator.Name(), f.globalGeneratedName)
+			}
+			options := kubeinformers.WithNamespace(namespace.GetName())
+			informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(f.GetFirstContext().Clients.KubeClient, time.Second*30, options)
+			f.GetFirstContext().EventHandler = events.EventHandler{}
+			f.GetFirstContext().EventHandler.CreateEventInformers(informerFactory)
+			f.GetFirstContext().Namespace = f.globalGeneratedName
+		}
+		f.Setup()
+	}
 }
 
 // BeforeEach gets clients and makes a namespace
@@ -315,14 +365,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			builder.NewBuilder(restConfig, &rawConfig)
 			builder.WithNamespace(name)
 
-			if !f.globalOperatorFlag {
-				log.Logf("no global flag, building local operator")
-				operator, err := builder.Build()
-				gomega.Expect(err).NotTo(gomega.HaveOccurred())
-				ctx.OperatorMap[builder.OperatorType()] = operator
-			} else {
-				log.Logf("global flag, installing into openshift-operators instead")
-				builder.WithNamespace("openshift-operators").WithGlobalNamespace()
+			if !f.globalOperator {
 				operator, err := builder.Build()
 				gomega.Expect(err).NotTo(gomega.HaveOccurred())
 				ctx.OperatorMap[builder.OperatorType()] = operator
@@ -458,11 +501,7 @@ func (f *Framework) Setup() error {
 			if err != nil {
 				return fmt.Errorf("failed to setup %s: %v", operator.Name(), err)
 			}
-			watchedNamespace := ctxData.Namespace
-			if f.globalOperatorFlag {
-				watchedNamespace = "openshift-operators"
-			}
-			err = WaitForDeployment(f.GetFirstContext().Clients.KubeClient, watchedNamespace, operator.Name(), 1, RetryInterval, Timeout)
+			err = WaitForDeployment(f.GetFirstContext().Clients.KubeClient, ctxData.Namespace, operator.Name(), 1, RetryInterval, Timeout)
 			if err != nil {
 				return fmt.Errorf("failed to wait for %s: %v", operator.Name(), err)
 			}
