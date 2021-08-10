@@ -14,7 +14,7 @@ type ConfigMapData struct {
 }
 
 // CreateConfigMapData helper method to generate a ConfiMap using configuration Data
-func (c *ContextData) CreateConfigMapData(name string, data... ConfigMapData) (*v1.ConfigMap, error) {
+func (c *ContextData) CreateConfigMapData(name string, data ...ConfigMapData) (*v1.ConfigMap, error) {
 	// In case no data element provided
 	if data == nil || len(data) == 0 {
 		return nil, fmt.Errorf("need at least one ConfigDataMap element")
