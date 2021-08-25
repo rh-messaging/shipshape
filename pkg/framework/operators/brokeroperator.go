@@ -36,9 +36,10 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 			baseImportPath + "service_account.yaml",
 			baseImportPath + "role.yaml",
 			baseImportPath + "role_binding.yaml",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemis_crd.yaml",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemisaddress_crd.yaml",
-			baseImportPath + "crds/broker_v2alpha1_activemqartemisscaledown_crd.yaml",
+			baseImportPath + "crds/broker_activemqartemis_crd.yaml",
+			baseImportPath + "crds/broker_activemqartemisaddress_crd.yaml",
+			baseImportPath + "crds/broker_activemqartemisscaledown_crd.yaml",
+			baseImportPath + "crds/broker_activemqartemissecurity_crd.yaml",
 			baseImportPath + "operator.yaml",
 		}
 	}
