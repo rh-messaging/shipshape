@@ -2,6 +2,7 @@ package operators
 
 import (
 	"fmt"
+
 	qdrclientset "github.com/interconnectedcloud/qdr-operator/pkg/client/clientset/versioned"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -103,10 +104,10 @@ func (q *QdrOperator) TeardownSuite() error {
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s cluster role binding: %v", q.Name(), err)
 	}
-	for _, crdName := range q.CRDNames() {
-		err = q.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crdName, metav1.NewDeleteOptions(1))
+	for _, crd := range q.crds {
+		err = q.DeleteResourcesFromYAMLBytes(crd)
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete %s crd: %v", q.Name(), err)
+			return err
 		}
 	}
 
