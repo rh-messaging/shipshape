@@ -83,7 +83,7 @@ func WaitForStatefulSetReady(kubeclient kubernetes.Interface, namespace, name st
 
 func WaitForStatefulSetCreation(kubeclient kubernetes.Interface, namespace, name string, retryInterval, timeout time.Duration) error {
     err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		ds, err := kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		_, err = kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Logf("Waiting for availability of %s stateful set", name)
