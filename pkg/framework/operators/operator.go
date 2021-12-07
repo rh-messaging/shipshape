@@ -18,6 +18,7 @@ type OperatorSetupBuilder interface {
 	SetOperatorName(operatorName string) OperatorSetupBuilder
 	WithApiVersion(apiVersion string) OperatorSetupBuilder
 	WithYamls(yamls [][]byte) OperatorSetupBuilder
+	WithGlobalNamespace() OperatorSetupBuilder
 	Build() (OperatorSetup, error)
 	OperatorType() OperatorType
 }
