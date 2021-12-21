@@ -41,18 +41,19 @@ const (
 
 //All the base operator stuff goes into this class. All operator-specific things go into specific classes.
 type BaseOperatorBuilder struct {
-	yamls         [][]byte
-	yamlURLs      []string
-	image         string
-	namespace     string
-	restConfig    *rest.Config
-	rawConfig     *clientcmdapi.Config
-	operatorName  string
-	keepCdrs      bool
-	apiVersion    string
-	customCommand string
-	finalized     bool
-	crdsPrepared  bool
+	yamls           [][]byte
+	yamlURLs        []string
+	image           string
+	namespace       string
+	restConfig      *rest.Config
+	rawConfig       *clientcmdapi.Config
+	operatorName    string
+	keepCdrs        bool
+	apiVersion      string
+	customCommand   string
+	finalized       bool
+	crdsPrepared    bool
+	globalNamespace bool
 }
 
 type BaseOperator struct {
@@ -80,6 +81,7 @@ type BaseOperator struct {
 	crds              [][]byte
 	keepCRD           bool
 	crdsPrepared      bool
+	globalNamespace   bool
 }
 
 type DefinitionStruct struct {
@@ -106,7 +108,16 @@ func (b *BaseOperatorBuilder) WithNamespace(namespace string) OperatorSetupBuild
 
 func (b *BaseOperatorBuilder) OperatorType() OperatorType {
 	// Delegate to concrete implementations
-	panic("implement me")
+	panic("(don't) implement me")
+}
+
+func (b *BaseOperatorBuilder) WithGlobalNamespace() OperatorSetupBuilder {
+	if !b.finalized {
+		b.globalNamespace = true
+		return b
+	} else {
+		panic(fmt.Errorf("can't edit operator builder post-finalization"))
+	}
 }
 
 func (b *BaseOperatorBuilder) WithImage(image string) OperatorSetupBuilder {
@@ -220,9 +231,12 @@ func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator.keepCRD = b.keepCdrs
 	baseOperator.customCommand = b.customCommand
 	baseOperator.crdsPrepared = b.crdsPrepared
+	baseOperator.globalNamespace = b.globalNamespace
 	if err := baseOperator.Setup(); err != nil {
 		return nil, fmt.Errorf("failed to set up operator %s: %v", baseOperator.operatorName, err)
 	}
+
+	log.Logf("Built operator builder")
 	return baseOperator, nil
 }
 
@@ -235,6 +249,7 @@ func (b *BaseOperator) InitFromBaseOperatorBuilder(builder *BaseOperatorBuilder)
 	b.yamls = builder.yamls
 	b.keepCRD = builder.keepCdrs
 	b.crdsPrepared = builder.crdsPrepared
+	b.globalNamespace = builder.globalNamespace
 
 	// Initialize clients
 	if kubeClient, err := clientset.NewForConfig(b.restConfig); err != nil {
@@ -311,6 +326,7 @@ func (b *BaseOperator) setupRole(jsonObj []byte) {
 }
 
 func (b *BaseOperator) setupClusterRole(jsonObj []byte) {
+	log.Logf("Setting up cluster role")
 	if err := json.Unmarshal(jsonObj, &b.cRole); err != nil {
 		b.errorItemLoad("cluster role", jsonObj, err)
 	}
@@ -415,6 +431,7 @@ func (b *BaseOperator) setupPreparedYamls() error {
 }
 
 func (b *BaseOperator) SetupYamls() error {
+	log.Logf("yamls being set up (normal)")
 	if b.yamlURLs != nil {
 		return b.setupYamlsFromUrls()
 	} else if b.yamls != nil {
@@ -425,7 +442,8 @@ func (b *BaseOperator) SetupYamls() error {
 }
 
 func (b *BaseOperator) setupDeployment(jsonItem []byte) {
-	log.Logf("Setting up Deployment")
+	log.Logf("Setting up Deployment (base)")
+	log.Logf("Namespace: %s", b.namespace)
 	if err := json.Unmarshal(jsonItem, &b.deploymentConfig); err != nil {
 		b.errorItemLoad("deployment", jsonItem, err)
 	}
@@ -439,6 +457,21 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 	if b.operatorName != "" {
 		//b.deploymentConfig.Spec.Template.Spec.Containers[0].Name = b.operatorName
 		b.deploymentConfig.ObjectMeta.Name = b.operatorName
+	}
+
+	if b.globalNamespace {
+		log.Logf("Patching env for global operator support")
+		watchNamespaces := &corev1.EnvVar{
+			Name:      "WATCH_NAMESPACE",
+			Value:     "",
+			ValueFrom: nil,
+		}
+		b.deploymentConfig.Spec.Template.Spec.Containers[0].Env = append(b.deploymentConfig.Spec.Template.Spec.Containers[0].Env, *watchNamespaces)
+		/* for _, item := range b.deploymentConfig.Spec.Template.Spec.Containers[0].Env {
+			if item.Name == "WATCH_NAMESPACE" {
+				log.Logf("Value: %s, ValueFrom: %s", item.Value, item.ValueFrom)
+			}
+		} */ // - may be better to overwrite value in env instead of appending new envvar, unssure yet
 	}
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)

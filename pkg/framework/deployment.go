@@ -53,7 +53,11 @@ func (c *ContextData) ListPodsForDeployment(deployment *appsv1.Deployment) (*cor
 	return c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(listOps)
 }
 
-func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error {
+func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error { // I'd deprecate this method but it might be used in tests etc.
+	return WaitForStatefulSetReady(kubeclient, namespace, name, count, retryInterval, timeout)
+}
+
+func WaitForStatefulSetReady(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		ds, err := kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
@@ -77,12 +81,32 @@ func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string,
 	return nil
 }
 
+func WaitForStatefulSetCreation(kubeclient kubernetes.Interface, namespace, name string, retryInterval, timeout time.Duration) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		_, err = kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Logf("Waiting for availability of %s stateful set", name)
+				return false, nil
+			}
+			return false, err
+		} else {
+			return true, nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	log.Logf("Statefulset created (%d)")
+	return nil
+}
+
 func WaitForDeployment(kubeclient kubernetes.Interface, namespace, name string, replicas int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Logf("Waiting for availability of %s deployment", name)
+				log.Logf("Waiting for availability of %s deployment in %s namepsace", name, namespace)
 				return false, nil
 			}
 			return false, err
