@@ -74,6 +74,7 @@ type BaseOperator struct {
 	customCommand     string
 	deploymentConfig  appsv1.Deployment
 	serviceAccount    corev1.ServiceAccount
+	configMap         corev1.ConfigMap
 	role              rbacv1.Role
 	cRole             rbacv1.ClusterRole
 	roleBinding       rbacv1.RoleBinding
@@ -330,7 +331,6 @@ func (b *BaseOperator) setupClusterRole(jsonObj []byte) {
 	if err := json.Unmarshal(jsonObj, &b.cRole); err != nil {
 		b.errorItemLoad("cluster role", jsonObj, err)
 	}
-
 	// Ignore errors if cluster level resource already exists
 	if _, err := b.kubeClient.RbacV1().ClusterRoles().Create(&b.cRole); err != nil {
 		b.errorItemCreate("cluster role", err)
@@ -343,6 +343,7 @@ func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 		b.errorItemLoad("role binding", jsonObj, err)
 	}
 	b.roleBinding.Name = "rolebinding-" + util.String(8) //silly.
+	//b.roleBinding.Subjects[0].Namespace = "openshift-operators" //hardcoded as cluster-wide operator install is hardcoded to openshift-operators
 	if _, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(&b.roleBinding); err != nil {
 		b.errorItemCreate("role binding", err)
 	}
@@ -354,6 +355,16 @@ func (b *BaseOperator) setupClusterRoleBinding(jsonObj []byte) {
 		b.errorItemLoad("cluster role binding", jsonObj, err)
 	}
 	if _, err := b.kubeClient.RbacV1().ClusterRoleBindings().Create(&b.cRoleBinding); err != nil {
+		b.errorItemCreate("cluster role binding", err)
+	}
+}
+
+func (b *BaseOperator) setupConfigMap(jsonObj []byte) {
+	log.Logf("Setting up ConfigMap")
+	if err := json.Unmarshal(jsonObj, &b.configMap); err != nil {
+		b.errorItemLoad("cluster role binding", jsonObj, err)
+	}
+	if _, err := b.kubeClient.CoreV1().ConfigMaps(b.Namespace()).Create(&b.configMap); err != nil {
 		b.errorItemCreate("cluster role binding", err)
 	}
 }
@@ -410,6 +421,8 @@ func (b *BaseOperator) createKubeObject(jsonItem []byte) error {
 		b.setupCRD(jsonItem)
 	case "Deployment":
 		b.setupDeployment(jsonItem)
+	case "ConfigMap":
+
 	default:
 		return fmt.Errorf("can't find item type %s", def.Kind)
 	}
@@ -473,6 +486,7 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 			}
 		} */ // - may be better to overwrite value in env instead of appending new envvar, unssure yet
 	}
+
 	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
