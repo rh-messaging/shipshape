@@ -2,6 +2,7 @@ package operators
 
 import (
 	"fmt"
+
 	brokerclientset "github.com/artemiscloud/activemq-artemis-operator/pkg/client/clientset/versioned"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -69,6 +70,7 @@ func (b *BrokerOperator) Setup() error {
 }
 
 func (b *BrokerOperator) TeardownEach() error {
+	log.Logf("deliting operator from %s", b.Namespace())
 	err := b.kubeClient.CoreV1().ServiceAccounts(b.Namespace()).Delete(b.Name(), metav1.NewDeleteOptions(1))
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s service account: %v", b.Name(), err)

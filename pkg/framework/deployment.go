@@ -16,9 +16,10 @@ package framework
 
 import (
 	"context"
+	"time"
+
 	"github.com/onsi/gomega"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
