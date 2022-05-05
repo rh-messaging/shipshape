@@ -16,12 +16,13 @@ package framework
 
 import (
 	"fmt"
-	projectv1 "github.com/openshift/client-go/project/clientset/versioned"
-	"github.com/rh-messaging/shipshape/pkg/framework/log"
-	"github.com/rh-messaging/shipshape/pkg/framework/util"
 	"strings"
 	"sync"
 	"time"
+
+	projectv1 "github.com/openshift/client-go/project/clientset/versioned"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	"github.com/rh-messaging/shipshape/pkg/framework/util"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -115,7 +116,7 @@ func (c *ContextData) AddNamespacesToDelete(namespaces ...*corev1.Namespace) {
 func generateProject(client projectv1.Interface, baseName string, labels map[string]string) *openapiv1.Project {
 	projectObj := &openapiv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("e2e-tests-%v-%v", baseName, util.String(8)),
+			GenerateName: fmt.Sprintf("shipshape-%v-%v", baseName, util.String(5)),
 			Labels:       labels,
 		},
 	}
@@ -128,7 +129,7 @@ func generateProject(client projectv1.Interface, baseName string, labels map[str
 func generateNamespace(client clientset.Interface, baseName string, labels map[string]string) *corev1.Namespace {
 	namespaceObj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("e2e-tests-%v-", baseName),
+			GenerateName: fmt.Sprintf("shipshape-%v-", baseName),
 			Labels:       labels,
 		},
 	}
