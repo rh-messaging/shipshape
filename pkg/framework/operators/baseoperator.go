@@ -487,7 +487,7 @@ func (b *BaseOperator) setupDeployment(jsonItem []byte) {
 		} */ // - may be better to overwrite value in env instead of appending new envvar, unssure yet
 	}
 
-	if _, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig); err != nil {
+	if err := b.CreateDeployment(); err != nil {
 		b.errorItemCreate("deployment", err)
 	}
 }
@@ -522,6 +522,34 @@ func (b *BaseOperator) APIVersion() string {
 
 func (b *BaseOperator) Setup() error {
 	if err := b.SetupYamls(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BaseOperator) GetDeployment() (*appsv1.Deployment, error) {
+	return b.kubeClient.AppsV1().Deployments(b.namespace).Get(b.deploymentConfig.Name, metav1.GetOptions{})
+}
+
+func (b *BaseOperator) UpdateDeployment(deployment *appsv1.Deployment) error {
+	_, err := b.kubeClient.AppsV1().Deployments(b.namespace).Update(deployment)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BaseOperator) DeleteOperator() error {
+	err := b.kubeClient.AppsV1().Deployments(b.namespace).Delete(b.deploymentConfig.Name, metav1.NewDeleteOptions(1))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BaseOperator) CreateDeployment() error {
+	_, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig)
+	if err != nil {
 		return err
 	}
 	return nil
