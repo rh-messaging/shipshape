@@ -5,6 +5,7 @@ import (
 
 	brokerclientset "github.com/artemiscloud/activemq-artemis-operator/pkg/client/clientset/versioned"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -143,4 +144,20 @@ func (b *BrokerOperator) Name() string {
 
 func (b *BrokerOperator) Interface() interface{} {
 	return b.brokerClient
+}
+
+func (b *BrokerOperator) UpdateDeployment(deployment *appsv1.Deployment) error {
+	return b.BaseOperator.UpdateDeployment(deployment)
+}
+
+func (b *BrokerOperator) DeleteDeployment() error {
+	return b.BaseOperator.DeleteDeployment()
+}
+
+func (b *BrokerOperator) CreateDeployment() error {
+	return b.BaseOperator.CreateDeployment()
+}
+
+func (b *BrokerOperator) GetDeployment() (*appsv1.Deployment, error) {
+	return b.BaseOperator.GetDeployment()
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 	"os/exec"
+
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 // SkupperOperatorBuilder helps building a skupper operator that uses
@@ -125,4 +127,20 @@ func (s *SkupperOperator) TeardownSuite() error {
 	err := cmd.Start()
 
 	return err
+}
+
+func (b *SkupperOperator) UpdateDeployment(deployment *appsv1.Deployment) error {
+	return b.BaseOperator.UpdateDeployment(deployment)
+}
+
+func (b *SkupperOperator) DeleteDeployment() error {
+	return b.BaseOperator.DeleteDeployment()
+}
+
+func (b *SkupperOperator) CreateDeployment() error {
+	return b.BaseOperator.CreateDeployment()
+}
+
+func (b *SkupperOperator) GetDeployment() (*appsv1.Deployment, error) {
+	return b.BaseOperator.GetDeployment()
 }

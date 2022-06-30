@@ -1,6 +1,7 @@
 package operators
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -32,6 +33,10 @@ type OperatorSetup interface {
 	GroupName() string
 	APIVersion() string
 	Setup() error
+	UpdateDeployment(deployment *appsv1.Deployment) error
+	DeleteDeployment() error
+	CreateDeployment() error
+	GetDeployment() (*appsv1.Deployment, error)
 	TeardownEach() error
 	TeardownSuite() error
 }

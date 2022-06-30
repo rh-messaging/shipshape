@@ -539,7 +539,7 @@ func (b *BaseOperator) UpdateDeployment(deployment *appsv1.Deployment) error {
 	return nil
 }
 
-func (b *BaseOperator) DeleteOperator() error {
+func (b *BaseOperator) DeleteDeployment() error {
 	err := b.kubeClient.AppsV1().Deployments(b.namespace).Delete(b.deploymentConfig.Name, metav1.NewDeleteOptions(1))
 	if err != nil {
 		return err
