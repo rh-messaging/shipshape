@@ -5,6 +5,7 @@ import (
 
 	qdrclientset "github.com/interconnectedcloud/qdr-operator/pkg/client/clientset/versioned"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -140,3 +141,19 @@ func (q *QdrOperator) Interface() interface{} {
 }
 
 func int32Ptr(i int32) *int32 { return &i }
+
+func (b *QdrOperator) UpdateDeployment(deployment *appsv1.Deployment) error {
+	return b.BaseOperator.UpdateDeployment(deployment)
+}
+
+func (b *QdrOperator) DeleteDeployment() error {
+	return b.BaseOperator.DeleteDeployment()
+}
+
+func (b *QdrOperator) CreateDeployment() error {
+	return b.BaseOperator.CreateDeployment()
+}
+
+func (b *QdrOperator) GetDeployment() (*appsv1.Deployment, error) {
+	return b.BaseOperator.GetDeployment()
+}

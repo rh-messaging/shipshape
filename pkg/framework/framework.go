@@ -16,12 +16,13 @@ package framework
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
 	"k8s.io/client-go/rest"
-	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -323,6 +324,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			} else {
 				log.Logf("global flag, installing into openshift-operators instead")
 				builder.WithNamespace("openshift-operators").WithGlobalNamespace()
+				f.SkipNamespaceCreation = true //dont remove the global namespace, d'oh
 				operator, err := builder.Build()
 				gomega.Expect(err).NotTo(gomega.HaveOccurred())
 				ctx.OperatorMap[builder.OperatorType()] = operator
