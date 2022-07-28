@@ -1,13 +1,15 @@
 package amqp
 
 import (
+	"context"
+	"sync"
+	"time"
+
 	"github.com/onsi/gomega"
 	"github.com/rh-messaging/shipshape/pkg/framework"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
-	"k8s.io/api/core/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sync"
-	"time"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Common partial implementation for Clients running in Pods/Containers
@@ -26,7 +28,7 @@ type AmqpClientCommon struct {
 }
 
 func (a *AmqpClientCommon) Deploy() error {
-	_, err := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).Create(a.Pod)
+	_, err := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).Create(context.TODO(), a.Pod, metav1.CreateOptions{})
 	return err
 }
 
@@ -39,7 +41,7 @@ func (a *AmqpClientCommon) Status() ClientStatus {
 		return Interrupted
 	}
 
-	pod, err := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).Get(a.Pod.Name, v12.GetOptions{})
+	pod, err := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).Get(context.TODO(), a.Pod.Name, metav1.GetOptions{})
 	// Errors might happen and we cannot simply assert it will be nil,
 	// or it will cause a panic.
 	if err != nil {
@@ -80,7 +82,7 @@ func (a *AmqpClientCommon) Interrupt() {
 	}
 
 	timeout := int64(TimeoutInterruptSecs)
-	err := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).Delete(a.Pod.Name, &v12.DeleteOptions{GracePeriodSeconds: &timeout})
+	err := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).Delete(context.TODO(), a.Pod.Name, metav1.DeleteOptions{GracePeriodSeconds: &timeout})
 	gomega.Expect(err).To(gomega.BeNil())
 
 	a.Interrupted = true

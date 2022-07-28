@@ -15,6 +15,7 @@
 package framework
 
 import (
+	gocontext "context"
 	"fmt"
 	"strings"
 	"time"
@@ -254,9 +255,9 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		} else {
 			tempCtx := rawConfig.Contexts[context]
 			if !f.IsOpenshift {
-				namespace, err = kubeClient.CoreV1().Namespaces().Get(tempCtx.Namespace, metav1.GetOptions{})
+				namespace, err = kubeClient.CoreV1().Namespaces().Get(gocontext.TODO(), tempCtx.Namespace, metav1.GetOptions{})
 			} else {
-				project, err = projectClient.ProjectV1().Projects().Get(tempCtx.Namespace, metav1.GetOptions{})
+				project, err = projectClient.ProjectV1().Projects().Get(gocontext.TODO(), tempCtx.Namespace, metav1.GetOptions{})
 			}
 		}
 		if !f.IsOpenshift {
@@ -266,11 +267,11 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 
 		// Verify if Cert Manager is installed
-		_, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("issuers.certmanager.k8s.io", metav1.GetOptions{})
+		_, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(gocontext.TODO(), "issuers.certmanager.k8s.io", metav1.GetOptions{})
 		certManagerPresent := false
 		if err == nil {
 			certManagerPresent = true
-		} else if _, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("issuers.cert-manager.io", metav1.GetOptions{}); err == nil {
+		} else if _, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(gocontext.TODO(), "issuers.cert-manager.io", metav1.GetOptions{}); err == nil {
 			certManagerPresent = true
 		}
 

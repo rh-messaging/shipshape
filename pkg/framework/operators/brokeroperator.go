@@ -1,6 +1,7 @@
 package operators
 
 import (
+	"context"
 	"fmt"
 
 	brokerclientset "github.com/artemiscloud/activemq-artemis-operator/pkg/client/clientset/versioned"
@@ -72,19 +73,19 @@ func (b *BrokerOperator) Setup() error {
 
 func (b *BrokerOperator) TeardownEach() error {
 	log.Logf("deliting operator from %s", b.Namespace())
-	err := b.kubeClient.CoreV1().ServiceAccounts(b.Namespace()).Delete(b.Name(), metav1.NewDeleteOptions(1))
+	err := b.kubeClient.CoreV1().ServiceAccounts(b.Namespace()).Delete(context.TODO(), b.Name(), metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s service account: %v", b.Name(), err)
 	}
-	err = b.kubeClient.RbacV1().Roles(b.Namespace()).Delete(b.Name(), metav1.NewDeleteOptions(1))
+	err = b.kubeClient.RbacV1().Roles(b.Namespace()).Delete(context.TODO(), b.Name(), metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s role: %v", b.Name(), err)
 	}
-	err = b.kubeClient.RbacV1().RoleBindings(b.Namespace()).Delete(b.Name(), metav1.NewDeleteOptions(1))
+	err = b.kubeClient.RbacV1().RoleBindings(b.Namespace()).Delete(context.TODO(), b.Name(), metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s role binding: %v", b.Name(), err)
 	}
-	err = b.kubeClient.AppsV1().Deployments(b.Namespace()).Delete(b.Name(), metav1.NewDeleteOptions(1))
+	err = b.kubeClient.AppsV1().Deployments(b.Namespace()).Delete(context.TODO(), b.Name(), metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s deployment: %v", b.Name(), err)
 	}
@@ -99,16 +100,16 @@ func (b *BrokerOperator) TeardownSuite() error {
 		return nil
 	}
 
-	err := b.kubeClient.RbacV1().ClusterRoles().Delete(b.Name(), metav1.NewDeleteOptions(1))
+	err := b.kubeClient.RbacV1().ClusterRoles().Delete(context.TODO(), b.Name(), metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s cluster role: %v", b.Name(), err)
 	}
-	err = b.kubeClient.RbacV1().ClusterRoleBindings().Delete(b.Name(), metav1.NewDeleteOptions(1))
+	err = b.kubeClient.RbacV1().ClusterRoleBindings().Delete(context.TODO(), b.Name(), metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete %s cluster role binding: %v", b.Name(), err)
 	}
 	for _, crdName := range b.CRDNames() {
-		err = b.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crdName, metav1.NewDeleteOptions(1))
+		err = b.extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(context.TODO(), crdName, metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete %s crd: %v", b.Name(), err)
 		}

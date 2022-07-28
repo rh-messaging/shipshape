@@ -15,6 +15,7 @@
 package framework
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -55,7 +56,7 @@ func createProject(client projectv1.Interface, name string, labels map[string]st
 		},
 	}
 
-	project, err := client.ProjectV1().Projects().Create(projectObj)
+	project, err := client.ProjectV1().Projects().Create(context.TODO(), projectObj, metav1.CreateOptions{})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Error creating project %v", project)
 	return project
 }
@@ -81,7 +82,7 @@ func createNamespace(client clientset.Interface, name string, labels map[string]
 		},
 	}
 
-	namespace, err := client.CoreV1().Namespaces().Create(namespaceObj)
+	namespace, err := client.CoreV1().Namespaces().Create(context.TODO(), namespaceObj, metav1.CreateOptions{})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Error creating namespace %v", namespaceObj)
 	return namespace
 }
@@ -121,7 +122,7 @@ func generateProject(client projectv1.Interface, baseName string, labels map[str
 		},
 	}
 
-	project, err := client.ProjectV1().ProjectRequests().Create(projectObj)
+	project, err := client.ProjectV1().ProjectRequests().Create(context.TODO(), projectObj, metav1.CreateOptions{})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Error generating project %v", projectObj)
 	return project
 }
@@ -134,26 +135,26 @@ func generateNamespace(client clientset.Interface, baseName string, labels map[s
 		},
 	}
 
-	namespace, err := client.CoreV1().Namespaces().Create(namespaceObj)
+	namespace, err := client.CoreV1().Namespaces().Create(context.TODO(), namespaceObj, metav1.CreateOptions{})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Error generating namespace %v", namespaceObj)
 	return namespace
 }
 
 // GenerateNamespace creates a namespace with a random name.
 func (c *ContextData) GenerateNamespace() (*corev1.Namespace, error) {
-	return c.Clients.KubeClient.CoreV1().Namespaces().Create(&corev1.Namespace{
+	return c.Clients.KubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: namespaceNamePrefix,
 		},
-	})
+	}, metav1.CreateOptions{})
 }
 
 func (c *ContextData) GenerateProject() (*openapiv1.Project, error) {
-	return c.Clients.OcpClient.ProjectsClient.ProjectV1().Projects().Create(&openapiv1.Project{
+	return c.Clients.OcpClient.ProjectsClient.ProjectV1().Projects().Create(context.TODO(), &openapiv1.Project{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: namespaceNamePrefix,
 		},
-	})
+	}, metav1.CreateOptions{})
 }
 
 func deleteNamespace(client clientset.Interface, namespaceName string) error {
@@ -163,9 +164,9 @@ func deleteNamespace(client clientset.Interface, namespaceName string) error {
 		return nil
 	}
 
-	return client.CoreV1().Namespaces().Delete(
+	return client.CoreV1().Namespaces().Delete(context.TODO(),
 		namespaceName,
-		&metav1.DeleteOptions{})
+		metav1.DeleteOptions{})
 
 }
 
@@ -174,7 +175,7 @@ func deleteProject(client projectv1.Interface, projectName string) error {
 		log.Logf("Skipping removal as projects are meant to be preserved")
 		return nil
 	}
-	return client.ProjectV1().Projects().Delete(projectName, &metav1.DeleteOptions{})
+	return client.ProjectV1().Projects().Delete(context.TODO(), projectName, metav1.DeleteOptions{})
 }
 
 func (c *ContextData) DeleteProject(prj *openapiv1.Project) []error {
@@ -218,7 +219,7 @@ func (c *ContextData) DeleteNamespace(ns *corev1.Namespace) []error {
 // Returns the list of deleted namespaces or an error.
 func DeleteNamespaces(c clientset.Interface, deleteFilter, skipFilter []string) ([]string, error) {
 	ginkgo.By("Deleting namespaces")
-	nsList, err := c.CoreV1().Namespaces().List(metav1.ListOptions{})
+	nsList, err := c.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	ExpectNoError(err, "Failed to get namespace list")
 	var deleted []string
 	var wg sync.WaitGroup
@@ -248,7 +249,7 @@ OUTER:
 		go func(nsName string) {
 			defer wg.Done()
 			defer ginkgo.GinkgoRecover()
-			gomega.Expect(c.CoreV1().Namespaces().Delete(nsName, nil)).To(gomega.Succeed())
+			gomega.Expect(c.CoreV1().Namespaces().Delete(context.TODO(), nsName, metav1.DeleteOptions{})).To(gomega.Succeed())
 			log.Logf("namespace : %v api call to delete is complete ", nsName)
 		}(item.Name)
 	}
@@ -266,7 +267,7 @@ func WaitForNamespacesDeleted(c clientset.Interface, namespaces []string, timeou
 
 	return wait.Poll(2*time.Second, timeout,
 		func() (bool, error) {
-			nsList, err := c.CoreV1().Namespaces().List(metav1.ListOptions{})
+			nsList, err := c.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 			if err != nil {
 				return false, err
 			}

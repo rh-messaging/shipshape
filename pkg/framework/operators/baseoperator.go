@@ -3,6 +3,7 @@ package operators
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -306,7 +307,7 @@ func (b *BaseOperator) setupServiceAccount(jsonObj []byte) {
 	if err := json.Unmarshal(jsonObj, &b.serviceAccount); err != nil {
 		b.errorItemLoad("service account", jsonObj, err)
 	}
-	if _, err := b.kubeClient.CoreV1().ServiceAccounts(b.namespace).Create(&b.serviceAccount); err != nil {
+	if _, err := b.kubeClient.CoreV1().ServiceAccounts(b.namespace).Create(context.TODO(), &b.serviceAccount, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("service account", err)
 	}
 
@@ -321,7 +322,7 @@ func (b *BaseOperator) setupRole(jsonObj []byte) {
 	for _, item := range b.role.Rules {
 		log.Logf("Rule concerning %v is being created", item.Resources)
 	}
-	if _, err := b.kubeClient.RbacV1().Roles(b.namespace).Create(&b.role); err != nil {
+	if _, err := b.kubeClient.RbacV1().Roles(b.namespace).Create(context.TODO(), &b.role, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("role", err)
 	}
 }
@@ -332,7 +333,7 @@ func (b *BaseOperator) setupClusterRole(jsonObj []byte) {
 		b.errorItemLoad("cluster role", jsonObj, err)
 	}
 	// Ignore errors if cluster level resource already exists
-	if _, err := b.kubeClient.RbacV1().ClusterRoles().Create(&b.cRole); err != nil {
+	if _, err := b.kubeClient.RbacV1().ClusterRoles().Create(context.TODO(), &b.cRole, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("cluster role", err)
 	}
 }
@@ -344,7 +345,7 @@ func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 	}
 	b.roleBinding.Name = "rolebinding-" + util.String(8) //silly.
 	//b.roleBinding.Subjects[0].Namespace = "openshift-operators" //hardcoded as cluster-wide operator install is hardcoded to openshift-operators
-	if _, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(&b.roleBinding); err != nil {
+	if _, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(context.TODO(), &b.roleBinding, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("role binding", err)
 	}
 }
@@ -354,7 +355,7 @@ func (b *BaseOperator) setupClusterRoleBinding(jsonObj []byte) {
 	if err := json.Unmarshal(jsonObj, &b.cRoleBinding); err != nil {
 		b.errorItemLoad("cluster role binding", jsonObj, err)
 	}
-	if _, err := b.kubeClient.RbacV1().ClusterRoleBindings().Create(&b.cRoleBinding); err != nil {
+	if _, err := b.kubeClient.RbacV1().ClusterRoleBindings().Create(context.TODO(), &b.cRoleBinding, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("cluster role binding", err)
 	}
 }
@@ -364,7 +365,7 @@ func (b *BaseOperator) setupConfigMap(jsonObj []byte) {
 	if err := json.Unmarshal(jsonObj, &b.configMap); err != nil {
 		b.errorItemLoad("cluster role binding", jsonObj, err)
 	}
-	if _, err := b.kubeClient.CoreV1().ConfigMaps(b.Namespace()).Create(&b.configMap); err != nil {
+	if _, err := b.kubeClient.CoreV1().ConfigMaps(b.Namespace()).Create(context.TODO(), &b.configMap, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("cluster role binding", err)
 	}
 }
@@ -528,11 +529,11 @@ func (b *BaseOperator) Setup() error {
 }
 
 func (b *BaseOperator) GetDeployment() (*appsv1.Deployment, error) {
-	return b.kubeClient.AppsV1().Deployments(b.namespace).Get(b.deploymentConfig.Name, metav1.GetOptions{})
+	return b.kubeClient.AppsV1().Deployments(b.namespace).Get(context.TODO(), b.deploymentConfig.Name, metav1.GetOptions{})
 }
 
 func (b *BaseOperator) UpdateDeployment(deployment *appsv1.Deployment) error {
-	_, err := b.kubeClient.AppsV1().Deployments(b.namespace).Update(deployment)
+	_, err := b.kubeClient.AppsV1().Deployments(b.namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -540,7 +541,7 @@ func (b *BaseOperator) UpdateDeployment(deployment *appsv1.Deployment) error {
 }
 
 func (b *BaseOperator) DeleteDeployment() error {
-	err := b.kubeClient.AppsV1().Deployments(b.namespace).Delete(b.deploymentConfig.Name, metav1.NewDeleteOptions(1))
+	err := b.kubeClient.AppsV1().Deployments(b.namespace).Delete(context.TODO(), b.deploymentConfig.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
@@ -548,7 +549,7 @@ func (b *BaseOperator) DeleteDeployment() error {
 }
 
 func (b *BaseOperator) CreateDeployment() error {
-	_, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(&b.deploymentConfig)
+	_, err := b.kubeClient.AppsV1().Deployments(b.namespace).Create(context.TODO(), &b.deploymentConfig, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -561,25 +562,25 @@ func (b *BaseOperator) TeardownEach() error {
 	} else {
 		err := b.kubeClient.CoreV1().
 			ServiceAccounts(b.namespace).
-			Delete(b.serviceAccount.Name, metav1.NewDeleteOptions(1))
+			Delete(context.TODO(), b.serviceAccount.Name, metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		err = b.kubeClient.RbacV1().
 			Roles(b.namespace).
-			Delete(b.role.Name, metav1.NewDeleteOptions(1))
+			Delete(context.TODO(), b.role.Name, metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		err = b.kubeClient.RbacV1().
 			RoleBindings(b.namespace).
-			Delete(b.roleBinding.Name, metav1.NewDeleteOptions(1))
+			Delete(context.TODO(), b.roleBinding.Name, metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		err = b.kubeClient.AppsV1().
 			Deployments(b.namespace).
-			Delete(b.deploymentConfig.Name, metav1.NewDeleteOptions(1))
+			Delete(context.TODO(), b.deploymentConfig.Name, metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -669,10 +670,10 @@ func (b *BaseOperator) manageResourcesFromYAMLBytes(action dynamicAction, yamlDa
 		errorAction := ""
 		switch action {
 		case dynamicActionCreate:
-			_, err = k8sResource.Create(unstructuredObj, metav1.CreateOptions{})
+			_, err = k8sResource.Create(context.TODO(), unstructuredObj, metav1.CreateOptions{})
 			errorAction = "creating"
 		case dynamicActionDelete:
-			err = k8sResource.Delete(unstructuredObj.GetName(), &metav1.DeleteOptions{})
+			err = k8sResource.Delete(context.TODO(), unstructuredObj.GetName(), metav1.DeleteOptions{})
 			errorAction = "deleting"
 		}
 		if err != nil {

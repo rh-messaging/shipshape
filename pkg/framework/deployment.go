@@ -25,14 +25,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (c *ContextData) GetDeployment(name string) (*appsv1.Deployment, error) {
-	return c.Clients.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
+	return c.Clients.KubeClient.AppsV1().Deployments(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 func (c *ContextData) ListPodsForDeploymentName(name string) (*corev1.PodList, error) {
@@ -51,7 +50,7 @@ func (c *ContextData) ListPodsForDeployment(deployment *appsv1.Deployment) (*cor
 		return nil, err
 	}
 	listOps := metav1.ListOptions{LabelSelector: selector.String()}
-	return c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(listOps)
+	return c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), listOps)
 }
 
 func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error { // I'd deprecate this method but it might be used in tests etc.
@@ -60,7 +59,7 @@ func WaitForStatefulSet(kubeclient kubernetes.Interface, namespace, name string,
 
 func WaitForStatefulSetReady(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		ds, err := kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		ds, err := kubeclient.AppsV1().StatefulSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Logf("Waiting for availability of %s stateful set", name)
@@ -84,7 +83,7 @@ func WaitForStatefulSetReady(kubeclient kubernetes.Interface, namespace, name st
 
 func WaitForStatefulSetCreation(kubeclient kubernetes.Interface, namespace, name string, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		_, err = kubeclient.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		_, err = kubeclient.AppsV1().StatefulSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Logf("Waiting for availability of %s stateful set", name)
@@ -104,7 +103,7 @@ func WaitForStatefulSetCreation(kubeclient kubernetes.Interface, namespace, name
 
 func WaitForDeployment(kubeclient kubernetes.Interface, namespace, name string, replicas int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Logf("Waiting for availability of %s deployment in %s namepsace", name, namespace)
@@ -141,12 +140,12 @@ func WaitForDeployment(kubeclient kubernetes.Interface, namespace, name string, 
 }
 
 func (c *ContextData) GetDaemonSet(name string) (*appsv1.DaemonSet, error) {
-	return c.Clients.KubeClient.AppsV1().DaemonSets(c.Namespace).Get(name, metav1.GetOptions{})
+	return c.Clients.KubeClient.AppsV1().DaemonSets(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 func WaitForDaemonSet(kubeclient kubernetes.Interface, namespace, name string, count int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		ds, err := kubeclient.AppsV1().DaemonSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		ds, err := kubeclient.AppsV1().DaemonSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				log.Logf("Waiting for availability of %s daemon set", name)
@@ -168,16 +167,13 @@ func WaitForDaemonSet(kubeclient kubernetes.Interface, namespace, name string, c
 	return nil
 }
 
-func WaitForDeletion(dynclient client.Client, obj runtime.Object, retryInterval, timeout time.Duration) error {
-	key, err := client.ObjectKeyFromObject(obj)
-	if err != nil {
-		return err
-	}
+func WaitForDeletion(dynclient client.Client, obj client.Object, retryInterval, timeout time.Duration) error {
+	key := client.ObjectKeyFromObject(obj)
 
 	kind := obj.GetObjectKind().GroupVersionKind().Kind
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		err = dynclient.Get(ctx, key, obj)
 		if apierrors.IsNotFound(err) {
 			return true, nil
@@ -197,7 +193,7 @@ func WaitForDeletion(dynclient client.Client, obj runtime.Object, retryInterval,
 
 func WaitForDeploymentDeleted(ctx context.Context, kubeclient kubernetes.Interface, namespace, name string) error {
 	err := RetryWithContext(ctx, RetryInterval, func() (bool, error) {
-		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return true, nil

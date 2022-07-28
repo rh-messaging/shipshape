@@ -15,10 +15,12 @@
 package framework
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (c *ContextData) GetSecret(name string) (*corev1.Secret, error) {
-	return c.Clients.KubeClient.CoreV1().Secrets(c.Namespace).Get(name, metav1.GetOptions{})
+	return c.Clients.KubeClient.CoreV1().Secrets(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 }
