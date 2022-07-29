@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog"
 )
 
 type dynamicAction int
@@ -214,6 +215,7 @@ func (b *BaseOperatorBuilder) Finalize() *BaseOperatorBuilder {
 
 func (b *BaseOperatorBuilder) Build() (OperatorSetup, error) {
 	baseOperator := &BaseOperator{}
+	klog.Warningf("restconfig: %s", b.restConfig)
 	if kubeClient, err := clientset.NewForConfig(b.restConfig); err != nil {
 		return nil, err
 	} else {

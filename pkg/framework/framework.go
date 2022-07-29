@@ -24,11 +24,14 @@ import (
 	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	networkv1 "github.com/openshift/client-go/network/clientset/versioned"
 	projectv1 "github.com/openshift/client-go/project/clientset/versioned"
@@ -222,6 +225,10 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		clientConfig, err := clientcmd.NewClientConfigFromBytes(bytes)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		restConfig, err := clientConfig.ClientConfig()
+		if restConfig.NegotiatedSerializer == nil {
+			klog.Warningf("restconfig has no serializer!")
+			restConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+		}
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		rawConfig, err := clientConfig.RawConfig()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
