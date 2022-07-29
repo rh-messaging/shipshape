@@ -27,12 +27,12 @@ before_install:
   # Get tools
   - git clone https://github.com/skupperproject/skupper-cli.git && cd skupper-cli && make build && cp skupper $GOPATH/bin
   - go install sigs.k8s.io/kind@latest
-  - go install github.com/jfeliu007/goplantuml/parser@latest
+  - go get github.com/jfeliu007/goplantuml/parser@latest
   - go install github.com/jfeliu007/goplantuml/cmd/goplantuml@latest
   - cd -
 
   # Create a new Kubernetes cluster using KinD
-  - ~/go/bin/kind create cluster
+  - kind create cluster
   - kubectl cluster-info
 
 script:
