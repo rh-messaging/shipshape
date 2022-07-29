@@ -17,6 +17,7 @@ package framework
 import (
 	gocontext "context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -189,6 +190,10 @@ func (f *Framework) BeforeEach(contexts ...string) {
 	// 3 - Generate the clients for given context
 
 	ginkgo.By("Creating kubernetes clients")
+	if len(TestContext.KubeConfig) == 0 {
+		TestContext.KubeConfig = os.Getenv(clientcmd.RecommendedConfigPathEnvVar)
+	}
+
 	config, err := clientcmd.LoadFromFile(TestContext.KubeConfig)
 	//if err != nil || config == nil {
 	//	fmt.Sprintf("Unable to retrieve config from %s - %s", TestContext.KubeConfig, err))

@@ -19,9 +19,10 @@ package framework
 import (
 	"flag"
 	"fmt"
-	"github.com/onsi/gomega"
 	"io/ioutil"
 	"os"
+
+	"github.com/onsi/gomega"
 
 	"github.com/onsi/ginkgo/config"
 	restclient "k8s.io/client-go/rest"
@@ -92,7 +93,7 @@ func RegisterFlags() {
 	flag.StringVar(&TestContext.ReportPrefix, "report-prefix", "", "Optional prefix for JUnit XML reports. Default is empty, which doesn't prepend anything to the default name.")
 	flag.StringVar(&TestContext.ReportDir, "report-dir", "", "Path to the directory where the JUnit XML reports should be saved. Default is empty, which doesn't generate these reports.")
 	// kubeconfig flag -> kubeconfig variable -> default location
-	flag.StringVar(&TestContext.KubeConfig, clientcmd.RecommendedConfigPathFlag, os.Getenv(clientcmd.RecommendedConfigPathEnvVar), "Path to kubeconfig containing embedded authinfo.")
+	//	flag.StringVar(&TestContext.KubeConfig, clientcmd.RecommendedConfigPathFlag, os.Getenv(clientcmd.RecommendedConfigPathEnvVar), "Path to kubeconfig containing embedded authinfo.")
 	flag.StringVar(&TestContext.CertDir, "cert-dir", "", "Path to the directory containing the certs. Default is empty, which doesn't use certs.")
 	flag.StringVar(&TestContext.RepoRoot, "repo-root", "../../", "Root directory of kubernetes repository, for finding test files.")
 	flag.StringVar(&TestContext.KubectlPath, "kubectl-path", "kubectl", "The kubectl binary to use. For development, you might use 'cluster/kubectl.sh' here.")
@@ -160,6 +161,7 @@ func AfterReadingAllFlags(t *TestContextType) {
 			}
 		}
 		if len(t.KubeConfig) == 0 {
+			// This will never get executed since if KubeConfig is empty, GetContexts() would fail.
 			klog.Warningf("Unable to find in-cluster config, using default host : %s", defaultHost)
 			t.Host = defaultHost
 		}
@@ -171,6 +173,10 @@ func AfterReadingAllFlags(t *TestContextType) {
 func (t TestContextType) GetContexts() []string {
 	if len(t.KubeContexts) > 0 {
 		return t.KubeContexts
+	}
+
+	if len(t.KubeConfig) == 0 {
+		t.KubeConfig = os.Getenv(clientcmd.RecommendedConfigPathEnvVar)
 	}
 
 	kubeConfig, err := clientcmd.LoadFromFile(t.KubeConfig)

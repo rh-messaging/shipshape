@@ -2,8 +2,8 @@ sudo: required
 dist: bionic
 language: go
 go:
-  - 1.16.x
   - 1.17.x
+  - 1.18.x
 
 go_import_path: github.com/rh-messaging/shipshape
 
@@ -26,13 +26,13 @@ before_install:
 
   # Get tools
   - git clone https://github.com/skupperproject/skupper-cli.git && cd skupper-cli && make build && cp skupper $GOPATH/bin
-  - go get sigs.k8s.io/kind@latest
-  - go get github.com/jfeliu007/goplantuml/parser@latest
-  - go get github.com/jfeliu007/goplantuml/cmd/goplantuml@latest
+  - go install sigs.k8s.io/kind@latest
+  - go install github.com/jfeliu007/goplantuml/parser@latest
+  - go install github.com/jfeliu007/goplantuml/cmd/goplantuml@latest
   - cd -
 
   # Create a new Kubernetes cluster using KinD
-  - kind create cluster
+  - ~/go/bin/kind create cluster
   - kubectl cluster-info
 
 script:
