@@ -37,7 +37,7 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 	if broker.yamls != nil {
 
 	} else if broker.yamlURLs == nil {
-		baseImportPath := "https://raw.githubusercontent.com/rh-messaging/activemq-artemis-operator/master/deploy/"
+		baseImportPath := "https://raw.githubusercontent.com/artemiscloud/activemq-artemis-operator/main/deploy/"
 		broker.yamlURLs = []string{
 			baseImportPath + "service_account.yaml",
 			baseImportPath + "role.yaml",
