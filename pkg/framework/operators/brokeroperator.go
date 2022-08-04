@@ -9,7 +9,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
 )
 
 // Reusing BaseOperatorBuilder implementation and adding
@@ -23,8 +22,6 @@ func (b *BrokerOperatorBuilder) Build() (OperatorSetup, error) {
 	if err := broker.InitFromBaseOperatorBuilder(&b.BaseOperatorBuilder); err != nil {
 		return broker, err
 	}
-
-	klog.Warningf("initializing restconfig in broker operator: %s", b.restConfig)
 
 	if brokerclient, err := brokerclientset.NewForConfig(b.restConfig); err != nil {
 		return broker, err

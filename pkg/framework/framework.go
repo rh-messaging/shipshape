@@ -21,6 +21,12 @@ import (
 	"strings"
 	"time"
 
+	brokerbeta "github.com/artemiscloud/activemq-artemis-operator/api/v1beta1"
+	brokeralpha1 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha1"
+	brokeralpha2 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha2"
+	brokeralpha3 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha3"
+	brokeralpha4 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha4"
+	brokeralpha5 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha5"
 	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
@@ -227,6 +233,13 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		restConfig, err := clientConfig.ClientConfig()
 		if restConfig.NegotiatedSerializer == nil {
 			klog.Warningf("restconfig has no serializer!")
+
+			brokeralpha1.AddToScheme(scheme.Scheme)
+			brokeralpha2.AddToScheme(scheme.Scheme)
+			brokeralpha3.AddToScheme(scheme.Scheme)
+			brokeralpha4.AddToScheme(scheme.Scheme)
+			brokeralpha5.AddToScheme(scheme.Scheme)
+			brokerbeta.AddToScheme(scheme.Scheme)
 			restConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
 		}
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
