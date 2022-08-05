@@ -14,7 +14,6 @@ import (
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -220,7 +219,7 @@ func (c *ContextData) WaitForPodStatus(podName string, status v1.PodPhase, timeo
 	return pod, err
 }
 
-func Execute(ctx1 *ContextData, command string, arguments []string, podname string) (string, string, error) {
+func (f *Framework) Execute(ctx1 *ContextData, command string, arguments []string, podname string) (string, string, error) {
 	pod, err := ctx1.Clients.KubeClient.CoreV1().Pods(ctx1.Namespace).Get(context.TODO(), podname, metav1.GetOptions{})
 	request := ctx1.Clients.KubeClient.CoreV1().RESTClient().
 		Post().
@@ -235,7 +234,7 @@ func Execute(ctx1 *ContextData, command string, arguments []string, podname stri
 			Stderr:  true,
 			TTY:     true,
 		}, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(&restConfig, "POST", request.URL())
+	exec, err := remotecommand.NewSPDYExecutor(&f.restConfig, "POST", request.URL())
 	buf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 	err = exec.Stream(remotecommand.StreamOptions{

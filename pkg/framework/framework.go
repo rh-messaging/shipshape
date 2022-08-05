@@ -60,7 +60,6 @@ var (
 	Timeout              = time.Second * 600
 	CleanupRetryInterval = time.Second * 1
 	CleanupTimeout       = time.Second * 5
-	restConfig           rest.Config
 )
 
 type ClientSet struct {
@@ -104,7 +103,8 @@ type ContextData struct {
 }
 
 type Framework struct {
-	BaseName string
+	BaseName   string
+	restConfig rest.Config
 
 	// Map that ties clients and namespaces for each available context
 	ContextMap            map[string]*ContextData
@@ -231,6 +231,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		clientConfig, err := clientcmd.NewClientConfigFromBytes(bytes)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		restConfig, err := clientConfig.ClientConfig()
+
 		if restConfig.NegotiatedSerializer == nil {
 			klog.Warningf("restconfig has no serializer!")
 
@@ -243,10 +244,12 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			restConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
 		}
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		f.restConfig = *restConfig
 		rawConfig, err := clientConfig.RawConfig()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		// Create the client instances
+		log.Logf("config: %v", restConfig)
 		kubeClient, err := clientset.NewForConfig(restConfig)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		extClient, err := apiextension.NewForConfig(restConfig)
@@ -537,7 +540,7 @@ func (c *ContextData) IsOpenShift() bool {
 }
 
 func (f *Framework) GetConfig() rest.Config {
-	return restConfig
+	return f.restConfig
 }
 
 func Int32Ptr(i int32) *int32 { return &i }
