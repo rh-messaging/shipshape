@@ -15,18 +15,29 @@
 package framework
 
 import (
+	gocontext "context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	brokerbeta "github.com/artemiscloud/activemq-artemis-operator/api/v1beta1"
+	brokeralpha1 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha1"
+	brokeralpha2 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha2"
+	brokeralpha3 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha3"
+	brokeralpha4 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha4"
+	brokeralpha5 "github.com/artemiscloud/activemq-artemis-operator/api/v2alpha5"
 	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	networkv1 "github.com/openshift/client-go/network/clientset/versioned"
 	projectv1 "github.com/openshift/client-go/project/clientset/versioned"
@@ -49,7 +60,6 @@ var (
 	Timeout              = time.Second * 600
 	CleanupRetryInterval = time.Second * 1
 	CleanupTimeout       = time.Second * 5
-	restConfig           rest.Config
 )
 
 type ClientSet struct {
@@ -93,7 +103,8 @@ type ContextData struct {
 }
 
 type Framework struct {
-	BaseName string
+	BaseName   string
+	restConfig rest.Config
 
 	// Map that ties clients and namespaces for each available context
 	ContextMap            map[string]*ContextData
@@ -188,6 +199,10 @@ func (f *Framework) BeforeEach(contexts ...string) {
 	// 3 - Generate the clients for given context
 
 	ginkgo.By("Creating kubernetes clients")
+	if len(TestContext.KubeConfig) == 0 {
+		TestContext.KubeConfig = os.Getenv(clientcmd.RecommendedConfigPathEnvVar)
+	}
+
 	config, err := clientcmd.LoadFromFile(TestContext.KubeConfig)
 	//if err != nil || config == nil {
 	//	fmt.Sprintf("Unable to retrieve config from %s - %s", TestContext.KubeConfig, err))
@@ -216,11 +231,25 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		clientConfig, err := clientcmd.NewClientConfigFromBytes(bytes)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		restConfig, err := clientConfig.ClientConfig()
+
+		if restConfig.NegotiatedSerializer == nil {
+			klog.Warningf("restconfig has no serializer!")
+
+			brokeralpha1.AddToScheme(scheme.Scheme)
+			brokeralpha2.AddToScheme(scheme.Scheme)
+			brokeralpha3.AddToScheme(scheme.Scheme)
+			brokeralpha4.AddToScheme(scheme.Scheme)
+			brokeralpha5.AddToScheme(scheme.Scheme)
+			brokerbeta.AddToScheme(scheme.Scheme)
+			restConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+		}
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		f.restConfig = *restConfig
 		rawConfig, err := clientConfig.RawConfig()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		// Create the client instances
+		log.Logf("config: %v", restConfig)
 		kubeClient, err := clientset.NewForConfig(restConfig)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		extClient, err := apiextension.NewForConfig(restConfig)
@@ -254,9 +283,9 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		} else {
 			tempCtx := rawConfig.Contexts[context]
 			if !f.IsOpenshift {
-				namespace, err = kubeClient.CoreV1().Namespaces().Get(tempCtx.Namespace, metav1.GetOptions{})
+				namespace, err = kubeClient.CoreV1().Namespaces().Get(gocontext.TODO(), tempCtx.Namespace, metav1.GetOptions{})
 			} else {
-				project, err = projectClient.ProjectV1().Projects().Get(tempCtx.Namespace, metav1.GetOptions{})
+				project, err = projectClient.ProjectV1().Projects().Get(gocontext.TODO(), tempCtx.Namespace, metav1.GetOptions{})
 			}
 		}
 		if !f.IsOpenshift {
@@ -266,11 +295,11 @@ func (f *Framework) BeforeEach(contexts ...string) {
 		}
 
 		// Verify if Cert Manager is installed
-		_, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("issuers.certmanager.k8s.io", metav1.GetOptions{})
+		_, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(gocontext.TODO(), "issuers.certmanager.k8s.io", metav1.GetOptions{})
 		certManagerPresent := false
 		if err == nil {
 			certManagerPresent = true
-		} else if _, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("issuers.cert-manager.io", metav1.GetOptions{}); err == nil {
+		} else if _, err = extClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(gocontext.TODO(), "issuers.cert-manager.io", metav1.GetOptions{}); err == nil {
 			certManagerPresent = true
 		}
 
@@ -511,7 +540,7 @@ func (c *ContextData) IsOpenShift() bool {
 }
 
 func (f *Framework) GetConfig() rest.Config {
-	return restConfig
+	return f.restConfig
 }
 
 func Int32Ptr(i int32) *int32 { return &i }

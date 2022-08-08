@@ -16,13 +16,14 @@ package framework
 
 import (
 	"context"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 func (c *ContextData) GetService(name string) (*corev1.Service, error) {
-	return c.Clients.KubeClient.CoreV1().Services(c.Namespace).Get(name, metav1.GetOptions{})
+	return c.Clients.KubeClient.CoreV1().Services(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 func (c *ContextData) WaitForService(name string, timeout time.Duration, interval time.Duration) (*corev1.Service, error) {

@@ -1,14 +1,16 @@
 package amqp_test
 
 import (
+	"context"
+	"testing"
+
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
 	"github.com/rh-messaging/shipshape/pkg/framework"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"testing"
 )
 
 const (
@@ -44,7 +46,7 @@ func init() {
 
 func updatePodPhase(phase v1.PodPhase, t *testing.T) {
 	testPod.Status.Phase = phase
-	_, err := testClient.Context.Clients.KubeClient.CoreV1().Pods(testClient.Context.Namespace).Update(testClient.Pod)
+	_, err := testClient.Context.Clients.KubeClient.CoreV1().Pods(testClient.Context.Namespace).Update(context.TODO(), testClient.Pod, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("error updating pod: %v", err)
 	}
@@ -55,7 +57,7 @@ func updatePodPhase(phase v1.PodPhase, t *testing.T) {
 func TestStatus(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
-	_, err := testClient.Context.Clients.KubeClient.CoreV1().Pods(testClient.Context.Namespace).Create(testClient.Pod)
+	_, err := testClient.Context.Clients.KubeClient.CoreV1().Pods(testClient.Context.Namespace).Create(context.TODO(), testClient.Pod, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("error injecting pod: %v", err)
 	}

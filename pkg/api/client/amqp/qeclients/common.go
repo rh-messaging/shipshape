@@ -3,10 +3,12 @@ package qeclients
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
+
 	"github.com/onsi/gomega"
 	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
-	"io"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -24,7 +26,7 @@ func (a *AmqpQEClientCommon) Result() amqp.ResultData {
 	}
 
 	request := a.Context.Clients.KubeClient.CoreV1().Pods(a.Context.Namespace).GetLogs(a.Pod.Name, &v1.PodLogOptions{})
-	logs, err := request.Stream()
+	logs, err := request.Stream(context.TODO())
 	gomega.Expect(err).To(gomega.BeNil())
 
 	// Close when done reading
@@ -42,7 +44,8 @@ func (a *AmqpQEClientCommon) Result() amqp.ResultData {
 	var messages []MessageDict
 
 	// Iterate through lines\
-	outer: for {
+outer:
+	for {
 		var line, partLine []byte
 		var fullLine = true
 

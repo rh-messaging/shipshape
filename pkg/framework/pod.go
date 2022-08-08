@@ -7,13 +7,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"io"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/rh-messaging/shipshape/pkg/framework/log"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -170,7 +170,7 @@ func (cb *ContainerBuilder) Build() v1.Container {
 func (c *ContextData) GetPodName(label string) (string, error) {
 	podListOpts := metav1.ListOptions{}
 	podListOpts.LabelSelector = "name=" + label
-	podList, err := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(podListOpts)
+	podList, err := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), podListOpts)
 	if err != nil {
 		return "", err
 	}
@@ -189,7 +189,7 @@ func (c *ContextData) GetPodName(label string) (string, error) {
 func (c *ContextData) GetLogs(podName string) (string, error) {
 	podLogOpts := v1.PodLogOptions{}
 	request := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).GetLogs(podName, &podLogOpts)
-	podLogs, err := request.Stream()
+	podLogs, err := request.Stream(context.TODO())
 	if err != nil {
 		return "", err
 	}
@@ -208,7 +208,7 @@ func (c *ContextData) WaitForPodStatus(podName string, status v1.PodPhase, timeo
 	ctx, cancel := context.WithTimeout(context.TODO(), timeout)
 	defer cancel()
 	err = RetryWithContext(ctx, interval, func() (bool, error) {
-		pod, err = c.Clients.KubeClient.CoreV1().Pods(c.Namespace).Get(podName, metav1.GetOptions{})
+		pod, err = c.Clients.KubeClient.CoreV1().Pods(c.Namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
 			// pod does not exist yet
 			return false, nil
@@ -219,8 +219,8 @@ func (c *ContextData) WaitForPodStatus(podName string, status v1.PodPhase, timeo
 	return pod, err
 }
 
-func Execute(ctx1 *ContextData, command string, arguments []string, podname string) (string, string, error) {
-	pod, err := ctx1.Clients.KubeClient.CoreV1().Pods(ctx1.Namespace).Get(podname, metav1.GetOptions{})
+func (f *Framework) Execute(ctx1 *ContextData, command string, arguments []string, podname string) (string, string, error) {
+	pod, err := ctx1.Clients.KubeClient.CoreV1().Pods(ctx1.Namespace).Get(context.TODO(), podname, metav1.GetOptions{})
 	request := ctx1.Clients.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(pod.Namespace).
@@ -234,7 +234,7 @@ func Execute(ctx1 *ContextData, command string, arguments []string, podname stri
 			Stderr:  true,
 			TTY:     true,
 		}, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(&restConfig, "POST", request.URL())
+	exec, err := remotecommand.NewSPDYExecutor(&f.restConfig, "POST", request.URL())
 	buf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 	err = exec.Stream(remotecommand.StreamOptions{
