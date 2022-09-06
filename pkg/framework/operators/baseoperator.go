@@ -41,7 +41,7 @@ const (
 	dynamicActionDelete
 )
 
-//All the base operator stuff goes into this class. All operator-specific things go into specific classes.
+// All the base operator stuff goes into this class. All operator-specific things go into specific classes.
 type BaseOperatorBuilder struct {
 	yamls           [][]byte
 	yamlURLs        []string
@@ -346,7 +346,6 @@ func (b *BaseOperator) setupRoleBinding(jsonObj []byte) {
 		b.errorItemLoad("role binding", jsonObj, err)
 	}
 	b.roleBinding.Name = "rolebinding-" + util.String(8) //silly.
-	//b.roleBinding.Subjects[0].Namespace = "openshift-operators" //hardcoded as cluster-wide operator install is hardcoded to openshift-operators
 	if _, err := b.kubeClient.RbacV1().RoleBindings(b.namespace).Create(context.TODO(), &b.roleBinding, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("role binding", err)
 	}
@@ -357,6 +356,7 @@ func (b *BaseOperator) setupClusterRoleBinding(jsonObj []byte) {
 	if err := json.Unmarshal(jsonObj, &b.cRoleBinding); err != nil {
 		b.errorItemLoad("cluster role binding", jsonObj, err)
 	}
+	b.cRoleBinding.Subjects[0].Namespace = "openshift-operators" //hardcoded as cluster-wide operator install is hardcoded to openshift-operators
 	if _, err := b.kubeClient.RbacV1().ClusterRoleBindings().Create(context.TODO(), &b.cRoleBinding, metav1.CreateOptions{}); err != nil {
 		b.errorItemCreate("cluster role binding", err)
 	}
