@@ -22,19 +22,19 @@ var (
 		},
 		Java: {
 			Name:            "cli-qpid-java",
-			Image:           "quay.io/rhmessagingqe/cli-java:latest",
+			Image:           "quay.io/messaging/cli-java",
 			CommandSender:   "cli-qpid-sender",
 			CommandReceiver: "cli-qpid-receiver",
 		},
 		JavaIBMZ: {
 			Name:            "cli-qpid-java",
-			Image:           "quay.io/lzhan/cli-java",
+			Image:           "quay.io/messaging/cli-java",
 			CommandSender:   "cli-qpid-sender",
 			CommandReceiver: "cli-qpid-receiver",
 		},
 		JavaPPC: {
 			Name:            "cli-qpid-java",
-			Image:           "quay.io/redmark/cli-java",
+			Image:           "quay.io/messaging/cli-java",
 			CommandSender:   "cli-qpid-sender",
 			CommandReceiver: "cli-qpid-receiver",
 		},
