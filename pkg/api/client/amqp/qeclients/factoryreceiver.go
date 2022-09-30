@@ -1,9 +1,10 @@
 package qeclients
 
 import (
+	"sync"
+
 	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
 	"github.com/rh-messaging/shipshape/pkg/framework"
-	"sync"
 )
 
 type AmqpQEReceiverBuilder struct {
