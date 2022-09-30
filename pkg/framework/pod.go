@@ -174,10 +174,10 @@ func (cb *ContainerBuilder) Build() v1.Container {
 	return cb.c
 }
 
-func (c *ContextData) GetPodName(label string) (string, error) {
+func (c *ContextData) GetPodNameFromNamespace(label string, ns string) (string, error) {
 	podListOpts := metav1.ListOptions{}
 	podListOpts.LabelSelector = "name=" + label
-	podList, err := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), podListOpts)
+	podList, err := c.Clients.KubeClient.CoreV1().Pods(ns).List(context.TODO(), podListOpts)
 	if err != nil {
 		return "", err
 	}
@@ -192,10 +192,14 @@ func (c *ContextData) GetPodName(label string) (string, error) {
 	return podList.Items[0].Name, nil
 }
 
+func (c *ContextData) GetPodName(label string) (string, error) {
+	return c.GetPodNameFromNamespace(label, c.Namespace)
+}
+
 // returns whole pod log as a (meaty) string
-func (c *ContextData) GetLogs(podName string) (string, error) {
+func (c *ContextData) GetLogsFromNamespace(podName string, ns string) (string, error) {
 	podLogOpts := v1.PodLogOptions{}
-	request := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).GetLogs(podName, &podLogOpts)
+	request := c.Clients.KubeClient.CoreV1().Pods(ns).GetLogs(podName, &podLogOpts)
 	podLogs, err := request.Stream(context.TODO())
 	if err != nil {
 		return "", err
@@ -207,6 +211,10 @@ func (c *ContextData) GetLogs(podName string) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func (c *ContextData) GetLogs(podName string) (string, error) {
+	return c.GetLogsFromNamespace(podName, c.Namespace)
 }
 
 func (c *ContextData) WaitForPodStatus(podName string, status v1.PodPhase, timeout time.Duration, interval time.Duration) (*v1.Pod, error) {
