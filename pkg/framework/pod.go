@@ -1,6 +1,4 @@
-//
 // Provides builders and helper methods for preparing Pods and nested Containers
-//
 package framework
 
 import (
@@ -18,9 +16,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-//
 // PodBuilder
-//
 type PodBuilder struct {
 	pod *v1.Pod
 }
@@ -31,8 +27,15 @@ func NewPodBuilder(name string, namespace string) *PodBuilder {
 	pb.pod = new(v1.Pod)
 	pb.pod.Name = name
 	pb.pod.Namespace = namespace
-	pb.pod.Spec = v1.PodSpec{}
 	pb.pod.Status = v1.PodStatus{}
+	pb.pod.Spec = v1.PodSpec{}
+	pb.pod.Spec.SecurityContext = &v1.PodSecurityContext{
+		RunAsNonRoot: &[]bool{true}[0],
+		SeccompProfile: &v1.SeccompProfile{
+			Type: v1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
+
 	return pb
 }
 
@@ -43,6 +46,12 @@ func NewContainerBuilder(name string, image string) *ContainerBuilder {
 	cb.c.Name = name
 	cb.c.Image = image
 	cb.c.TerminationMessagePolicy = v1.TerminationMessageFallbackToLogsOnError
+	cb.c.SecurityContext = &v1.SecurityContext{
+		AllowPrivilegeEscalation: &[]bool{false}[0],
+		Capabilities: &v1.Capabilities{
+			Drop: []v1.Capability{"ALL"},
+		},
+	}
 	return cb
 }
 
@@ -101,9 +110,7 @@ func (p *PodBuilder) Build() *v1.Pod {
 	return p.pod
 }
 
-//
 // ContainerBuilder
-//
 type ContainerBuilder struct {
 	c v1.Container
 }
@@ -185,7 +192,7 @@ func (c *ContextData) GetPodName(label string) (string, error) {
 	return podList.Items[0].Name, nil
 }
 
-//returns whole pod log as a (meaty) string
+// returns whole pod log as a (meaty) string
 func (c *ContextData) GetLogs(podName string) (string, error) {
 	podLogOpts := v1.PodLogOptions{}
 	request := c.Clients.KubeClient.CoreV1().Pods(c.Namespace).GetLogs(podName, &podLogOpts)
