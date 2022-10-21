@@ -29,8 +29,10 @@ func NewPodBuilder(name string, namespace string) *PodBuilder {
 	pb.pod.Namespace = namespace
 	pb.pod.Status = v1.PodStatus{}
 	pb.pod.Spec = v1.PodSpec{}
+	userId := int64(1000)
 	pb.pod.Spec.SecurityContext = &v1.PodSecurityContext{
 		RunAsNonRoot: &[]bool{true}[0],
+		RunAsUser:    &userId,
 		SeccompProfile: &v1.SeccompProfile{
 			Type: v1.SeccompProfileTypeRuntimeDefault,
 		},
