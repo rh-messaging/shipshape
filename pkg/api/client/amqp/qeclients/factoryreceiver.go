@@ -41,7 +41,7 @@ func (a *AmqpQEReceiverBuilder) WithCount(count int) *AmqpQEReceiverBuilder {
 
 func (a *AmqpQEReceiverBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args) and etc
-	podBuilder := framework.NewPodBuilder(a.receiver.Name, a.receiver.Context.Namespace)
+	podBuilder := framework.NewPodBuilder(a.receiver.Name, a.receiver.Context.Namespace, a.receiver.Context.ServerVersion)
 	podBuilder.AddLabel("amqp-client-impl", QEClientImageMap[a.receiver.Implementation].Name)
 	podBuilder.RestartPolicy("Never")
 

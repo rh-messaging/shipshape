@@ -8,6 +8,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	v1 "k8s.io/api/core/v1"
@@ -22,7 +23,7 @@ type PodBuilder struct {
 }
 
 // NewPodBuilder Creates an instance of a PodBuilder helper
-func NewPodBuilder(name string, namespace string) *PodBuilder {
+func NewPodBuilder(name string, namespace string, serverVersion string) *PodBuilder {
 	pb := new(PodBuilder)
 	pb.pod = new(v1.Pod)
 	pb.pod.Name = name
@@ -33,9 +34,18 @@ func NewPodBuilder(name string, namespace string) *PodBuilder {
 	pb.pod.Spec.SecurityContext = &v1.PodSecurityContext{
 		RunAsNonRoot: &[]bool{true}[0],
 		RunAsUser:    &userId,
-		SeccompProfile: &v1.SeccompProfile{
-			Type: v1.SeccompProfileTypeRuntimeDefault,
-		},
+	}
+
+	currentVer, _ := version.NewVersion(serverVersion)
+	minimalVer, _ := version.NewVersion("1.23")
+
+	if currentVer.GreaterThanOrEqual(minimalVer) {
+		log.Logf("Server version %s >= minimal version %s. Using SeccompProfile on client pod", currentVer, minimalVer)
+		secCompProfile := &v1.SeccompProfile{}
+		secCompProfile.Type = v1.SeccompProfileTypeRuntimeDefault
+		pb.pod.Spec.SecurityContext.SeccompProfile = secCompProfile
+	} else {
+		log.Logf("Server version %s < minimal version %s. *NOT* Using SeccompProfile on client pod", currentVer, minimalVer)
 	}
 
 	return pb
