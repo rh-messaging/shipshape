@@ -30,6 +30,7 @@ import (
 	"github.com/rh-messaging/shipshape/pkg/framework/events"
 	"github.com/rh-messaging/shipshape/pkg/framework/log"
 	"github.com/rh-messaging/shipshape/pkg/framework/operators"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
@@ -85,7 +86,8 @@ func contains(target operators.OperatorType, collection []operators.OperatorType
 }
 
 // ContextData holds clients and data related with namespaces
-//             created within
+//
+//	created within
 type ContextData struct {
 	Id                 string
 	Clients            ClientSet
@@ -100,6 +102,7 @@ type ContextData struct {
 	OperatorMap        map[operators.OperatorType]operators.OperatorSetup
 	isOpenShift        *bool
 	EventHandler       events.EventHandler
+	ServerVersion      string
 }
 
 type Framework struct {
@@ -267,6 +270,16 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			DynClient:  dynClient,
 		}
 
+		discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
+		if err != nil {
+			log.Logf(" error in discoveryClient %v", err)
+		}
+		serverVerInfo, err := discoveryClient.ServerVersion()
+		if err != nil {
+			log.Logf("Error while fetching server version information", err)
+		}
+		serverVersion := serverVerInfo.Major + "." + serverVerInfo.Minor
+
 		// Generating the namespace on provided contexts
 		ginkgo.By(fmt.Sprintf("Building namespace api objects, basename %s", f.BaseName))
 		// Keep original label for now (maybe we can remove or rename later)
@@ -317,6 +330,7 @@ func (f *Framework) BeforeEach(contexts ...string) {
 			UniqueName:         name,
 			Clients:            clients,
 			CertManagerPresent: certManagerPresent,
+			ServerVersion:      serverVersion,
 		}
 		f.ContextMap[context] = ctx
 

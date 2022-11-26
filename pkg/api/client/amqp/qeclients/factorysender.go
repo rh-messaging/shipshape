@@ -1,9 +1,10 @@
 package qeclients
 
 import (
+	"sync"
+
 	"github.com/rh-messaging/shipshape/pkg/api/client/amqp"
 	"github.com/rh-messaging/shipshape/pkg/framework"
-	"sync"
 )
 
 const (
@@ -60,7 +61,7 @@ func (a *AmqpQESenderBuilder) MessageContentFromFile(configMapName string, filen
 
 func (a *AmqpQESenderBuilder) Build() (*AmqpQEClientCommon, error) {
 	// Preparing Pod, Container (commands and args), Volumes and etc
-	podBuilder := framework.NewPodBuilder(a.sender.Name, a.sender.Context.Namespace)
+	podBuilder := framework.NewPodBuilder(a.sender.Name, a.sender.Context.Namespace, a.sender.Context.ServerVersion)
 	podBuilder.AddLabel("amqp-client-impl", QEClientImageMap[a.sender.Implementation].Name)
 	podBuilder.RestartPolicy("Never")
 
