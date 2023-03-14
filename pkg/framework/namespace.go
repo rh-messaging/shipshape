@@ -42,7 +42,6 @@ const (
 	NamespaceCleanupTimeout = 2 * time.Minute
 )
 
-//
 func createTestProject(client projectv1.Interface, name string, labels map[string]string) *openapiv1.Project {
 	ginkgo.By(fmt.Sprintf("Creating a project named %s to execute the tests in", name))
 	return createProject(client, name, labels)
@@ -117,8 +116,8 @@ func (c *ContextData) AddNamespacesToDelete(namespaces ...*corev1.Namespace) {
 func generateProject(client projectv1.Interface, baseName string, labels map[string]string) *openapiv1.Project {
 	projectObj := &openapiv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("shipshape-%v-%v", baseName, util.String(5)),
-			Labels:       labels,
+			Name:   fmt.Sprintf("shipshape-%v-%v", baseName, util.String(5)),
+			Labels: labels,
 		},
 	}
 
@@ -130,8 +129,8 @@ func generateProject(client projectv1.Interface, baseName string, labels map[str
 func generateNamespace(client clientset.Interface, baseName string, labels map[string]string) *corev1.Namespace {
 	namespaceObj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("shipshape-%v-", baseName),
-			Labels:       labels,
+			Name:   fmt.Sprintf("shipshape-%v-%v", baseName, util.String(5)),
+			Labels: labels,
 		},
 	}
 
@@ -144,7 +143,7 @@ func generateNamespace(client clientset.Interface, baseName string, labels map[s
 func (c *ContextData) GenerateNamespace() (*corev1.Namespace, error) {
 	return c.Clients.KubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: namespaceNamePrefix,
+			Name: fmt.Sprintf("%v-%v", namespaceNamePrefix, util.String(5)),
 		},
 	}, metav1.CreateOptions{})
 }
@@ -152,7 +151,7 @@ func (c *ContextData) GenerateNamespace() (*corev1.Namespace, error) {
 func (c *ContextData) GenerateProject() (*openapiv1.Project, error) {
 	return c.Clients.OcpClient.ProjectsClient.ProjectV1().Projects().Create(context.TODO(), &openapiv1.Project{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: namespaceNamePrefix,
+			Name: fmt.Sprintf("%v-%v", namespaceNamePrefix, util.String(5)),
 		},
 	}, metav1.CreateOptions{})
 }
